@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../stores/user'
 
-// 路由懒加载
 const LoginView = () => import('../views/LoginView.vue')
 const RegisterView = () => import('../views/RegisterView.vue')
+const MainLayout = () => import('../layouts/MainLayout.vue')
 const DashboardView = () => import('../views/DashboardView.vue')
 const HealthView = () => import('../views/HealthView.vue')
 const GlucoseView = () => import('../views/GlucoseView.vue')
@@ -18,10 +18,6 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
-      redirect: '/dashboard'
-    },
-    {
       path: '/login',
       name: 'login',
       component: LoginView,
@@ -34,94 +30,95 @@ const router = createRouter({
       meta: { requiresAuth: false }
     },
     {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: DashboardView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/health',
-      name: 'health',
-      component: HealthView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/glucose',
-      name: 'glucose',
-      component: GlucoseView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/diet',
-      name: 'diet',
-      component: DietView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/assistant',
-      name: 'assistant',
-      component: AssistantView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/knowledge',
-      name: 'knowledge',
-      component: KnowledgeView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: SettingsView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/glucose-record',
-      name: 'glucose-record',
-      component: GlucoseRecordView,
-      meta: { requiresAuth: true }
+      path: '/',
+      component: MainLayout,
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          redirect: '/dashboard'
+        },
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: DashboardView,
+          meta: { requiresAuth: true, title: '仪表盘' }
+        },
+        {
+          path: 'health',
+          name: 'health',
+          component: HealthView,
+          meta: { requiresAuth: true, title: '健康数据' }
+        },
+        {
+          path: 'glucose',
+          name: 'glucose',
+          component: GlucoseView,
+          meta: { requiresAuth: true, title: '血糖记录' }
+        },
+        {
+          path: 'glucose-record',
+          name: 'glucose-record',
+          component: GlucoseRecordView,
+          meta: { requiresAuth: true, title: '记录血糖' }
+        },
+        {
+          path: 'diet',
+          name: 'diet',
+          component: DietView,
+          meta: { requiresAuth: true, title: '饮食管理' }
+        },
+        {
+          path: 'assistant',
+          name: 'assistant',
+          component: AssistantView,
+          meta: { requiresAuth: true, title: '智能助理' }
+        },
+        {
+          path: 'knowledge',
+          name: 'knowledge',
+          component: KnowledgeView,
+          meta: { requiresAuth: true, title: '知识库' }
+        },
+        {
+          path: 'settings',
+          name: 'settings',
+          component: SettingsView,
+          meta: { requiresAuth: true, title: '设置' }
+        }
+      ]
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
-      component: NotFoundView
+      component: NotFoundView,
+      meta: { requiresAuth: false }
     }
-  ]
+  ],
+  scrollBehavior() {
+    return { top: 0 }
+  }
 })
 
-// 全局导航守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const userStore = useUserStore()
-  const requiresAuth = to.meta.requiresAuth !== false
-  
-  console.log('路由导航:', {
-    from: from.path,
-    to: to.path,
-    requiresAuth,
-    isAuthenticated: userStore.isAuthenticated,
-    token: !!userStore.token,
-    userId: userStore.user?.id
-  })
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth === true)
 
-  // 如果不需要认证，直接通过
   if (!requiresAuth) {
     next()
     return
   }
-  
-  // 如果需要认证但用户未登录
+
   if (!userStore.isAuthenticated) {
-    console.log('需要认证但用户未登录，重定向到登录页')
-    next({ 
-      name: 'login', 
+    next({
+      name: 'login',
       query: { redirect: to.fullPath },
-      replace: true 
+      replace: true
     })
     return
   }
-  
-  // 如果用户已登录，允许访问
+
   next()
 })
 
-export default router 
+export default router

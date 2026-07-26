@@ -1,14 +1,20 @@
 <template>
   <div class="assistant-page">
     <header class="assistant-header">
-      <div>
+      <div class="assistant-header-main">
         <div class="eyebrow">Health Agent</div>
         <h2>智能健康助理</h2>
         <p>查询真实健康数据，写入操作由您确认后执行。</p>
       </div>
-      <el-button plain :disabled="loading" @click="startNewConversation">
-        新对话
-      </el-button>
+      <div class="assistant-header-actions">
+        <el-button plain @click="goDashboard">
+          <el-icon><HomeFilled /></el-icon>
+          返回仪表盘
+        </el-button>
+        <el-button plain :disabled="loading" @click="startNewConversation">
+          新对话
+        </el-button>
+      </div>
     </header>
 
     <main ref="chatBodyRef" class="chat-body">
@@ -182,10 +188,11 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ChatLineRound,
+  HomeFilled,
   InfoFilled,
   Operation,
   Warning
@@ -266,6 +273,7 @@ const shortcuts: Shortcut[] = [
 ]
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const chatBodyRef = ref<HTMLElement | null>(null)
 const inputRef = ref<{ focus: () => void } | null>(null)
@@ -464,6 +472,10 @@ const getErrorMessage = (error: unknown): string => {
   return `请求失败（HTTP ${status ?? '未知'}），请稍后重试。`
 }
 
+const goDashboard = () => {
+  router.push('/dashboard')
+}
+
 const startNewConversation = async () => {
   if (messages.value.length > 0) {
     try {
@@ -591,31 +603,46 @@ const scrollToBottom = () => {
   --assistant-muted: #64748b;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 96px);
-  padding: 24px;
+  min-height: calc(100vh - 100px);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
   color: var(--assistant-text);
-  background: #f4f7fb;
+  background: transparent;
 }
 
 .assistant-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 20px 24px;
+  gap: 16px;
+  padding: 16px 18px;
   border: 1px solid var(--assistant-border);
-  border-radius: 18px 18px 0 0;
+  border-radius: 16px 16px 0 0;
   background: #ffffff;
+}
+
+.assistant-header-main {
+  min-width: 0;
+}
+
+.assistant-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .assistant-header h2 {
   margin: 2px 0 6px;
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .assistant-header p {
   margin: 0;
   color: var(--assistant-muted);
+  font-size: 13px;
 }
 
 .eyebrow {
@@ -628,10 +655,10 @@ const scrollToBottom = () => {
 
 .chat-body {
   flex: 1;
-  min-height: 360px;
-  max-height: calc(100vh - 390px);
+  min-height: 280px;
+  max-height: calc(100vh - 340px);
   overflow-y: auto;
-  padding: 24px;
+  padding: 18px;
   border-right: 1px solid var(--assistant-border);
   border-left: 1px solid var(--assistant-border);
   background: #ffffff;
@@ -955,13 +982,22 @@ const scrollToBottom = () => {
 
 @media (max-width: 768px) {
   .assistant-page {
-    min-height: calc(100vh - 64px);
-    padding: 12px;
+    min-height: calc(100vh - 88px);
+    padding: 0;
   }
 
   .assistant-header {
     align-items: flex-start;
-    padding: 16px;
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  .assistant-header-actions {
+    width: 100%;
+  }
+
+  .assistant-header-actions .el-button {
+    flex: 1;
   }
 
   .assistant-header p {

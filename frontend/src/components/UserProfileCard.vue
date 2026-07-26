@@ -1,41 +1,44 @@
 <template>
-  <el-card class="user-profile-card" shadow="never">
+  <el-card class="user-profile-card" :class="{ 'is-dense': dense }" shadow="never">
     <template #header>
       <div class="card-header">
         <div>
-          <span>我的健康档案</span>
-          <small>身份、目标与近 7 天概况</small>
+          <span>健康档案</span>
+          <small v-if="!dense">身份、目标与近 7 天概况</small>
         </div>
         <el-button text type="primary" @click="goToSettings">编辑</el-button>
       </div>
     </template>
 
-    <el-skeleton v-if="profileLoading && !displayProfile.id" :rows="6" animated />
+    <el-skeleton v-if="profileLoading && !displayProfile.id" :rows="dense ? 3 : 6" animated />
 
     <div v-else class="profile-content">
       <el-alert
         v-if="profileError"
         class="inline-alert"
-        title="完整档案暂时无法加载"
+        title="档案暂时无法加载"
         type="warning"
         :closable="false"
         show-icon
       />
 
       <div class="identity-row">
-        <el-avatar :size="58" :src="displayProfile.avatar || undefined">
+        <el-avatar :size="dense ? 40 : 58" :src="displayProfile.avatar || undefined">
           {{ userInitial }}
         </el-avatar>
         <div class="identity-copy">
           <strong>{{ displayName }}</strong>
-          <span>{{ displayProfile.email || '邮箱未设置' }}</span>
+          <span v-if="!dense">{{ displayProfile.email || '邮箱未设置' }}</span>
+          <span v-else class="identity-meta">
+            {{ diabetesTypeLabel }} · 目标 {{ targetRangeText }}
+          </span>
         </div>
         <el-tag :type="profileIncomplete ? 'warning' : 'success'" effect="light" size="small">
-          {{ profileIncomplete ? '档案待完善' : '档案已完善' }}
+          {{ profileIncomplete ? '待完善' : '已完善' }}
         </el-tag>
       </div>
 
-      <div class="profile-grid">
+      <div v-if="!dense" class="profile-grid">
         <div class="profile-item">
           <span>糖尿病类型</span>
           <strong>{{ diabetesTypeLabel }}</strong>
@@ -58,59 +61,58 @@
         </div>
       </div>
 
-      <div v-if="profileIncomplete" class="profile-guidance">
-        <span>完善档案后助理与图表更准</span>
+      <div v-if="profileIncomplete" class="profile-guidance" :class="{ 'is-dense': dense }">
+        <span>{{ dense ? '完善档案后图表更准' : '完善档案后助理与图表更准' }}</span>
         <el-button type="primary" link @click="goToSettings">去完善</el-button>
       </div>
 
-      <el-divider />
+      <template v-if="!dense">
+        <el-divider />
+      </template>
+      <div v-else class="dense-divider" />
 
       <div class="weekly-heading">
         <div>
-          <strong>近 7 天血糖</strong>
-          <span>按当前目标区间统计</span>
+          <strong>近 7 天</strong>
+          <span v-if="!dense">按当前目标区间统计</span>
         </div>
         <el-button v-if="statsError" link type="primary" @click="loadWeeklyStats">重试</el-button>
       </div>
 
-      <el-skeleton v-if="statsLoading" :rows="2" animated />
+      <el-skeleton v-if="statsLoading" :rows="1" animated />
 
       <el-alert
         v-else-if="statsError"
         class="inline-alert"
-        title="近 7 天统计暂时不可用"
+        title="近 7 天统计暂不可用"
         type="info"
         :closable="false"
         show-icon
       />
 
-      <el-empty v-else-if="!hasWeeklyData" class="compact-empty" description="近 7 天还没有血糖记录" :image-size="64">
-        <el-button type="primary" size="small" @click="goToGlucoseRecord">去记录血糖</el-button>
-      </el-empty>
-
-      <div v-else>
-        <div class="weekly-grid">
-          <div class="weekly-stat">
-            <strong>{{ weeklyAverage }}</strong>
-            <span>均值 mmol/L</span>
-          </div>
-          <div class="weekly-stat">
-            <strong>{{ weeklyStats?.count }}</strong>
-            <span>记录条数</span>
-          </div>
-          <div class="weekly-stat">
-            <strong>{{ inRangePercentage }}%</strong>
-            <span>达标率</span>
-          </div>
-        </div>
-        <el-tag :type="weeklyStatus.type" effect="plain" class="weekly-status">
-          {{ weeklyStatus.label }}
-        </el-tag>
+      <div v-else-if="!hasWeeklyData" class="dense-empty-row">
+        <span>近 7 天无血糖记录</span>
+        <el-button type="primary" link size="small" @click="emitRecordGlucose">去记录</el-button>
       </div>
 
-      <div class="card-actions">
-        <el-button type="primary" @click="goToGlucoseRecord">记录血糖</el-button>
-        <el-button @click="goToAssistant">问助理解读</el-button>
+      <div v-else class="weekly-grid" :class="{ 'is-dense': dense }">
+        <div class="weekly-stat">
+          <strong>{{ weeklyAverage }}</strong>
+          <span>均值</span>
+        </div>
+        <div class="weekly-stat">
+          <strong>{{ weeklyStats?.count }}</strong>
+          <span>条数</span>
+        </div>
+        <div class="weekly-stat">
+          <strong>{{ inRangePercentage }}%</strong>
+          <span>达标</span>
+        </div>
+      </div>
+
+      <div class="card-actions" :class="{ 'is-dense': dense }">
+        <el-button type="primary" size="small" @click="emitRecordGlucose">记录血糖</el-button>
+        <el-button size="small" @click="goToAssistant">问助理</el-button>
       </div>
     </div>
   </el-card>
@@ -125,9 +127,22 @@ import type { DiabetesType, GlucoseStatistics, User } from '../types/models'
 
 type TagType = 'success' | 'warning' | 'danger' | 'info'
 
-const props = defineProps<{
-  profile?: User | null
+const props = withDefaults(
+  defineProps<{
+    profile?: User | null
+    dense?: boolean
+  }>(),
+  {
+    profile: null,
+    dense: false
+  }
+)
+
+const emit = defineEmits<{
+  (e: 'record-glucose'): void
 }>()
+
+const dense = computed(() => props.dense)
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -235,6 +250,7 @@ const loadWeeklyStats = async () => {
 
 const goToSettings = () => router.push({ path: '/settings', hash: '#health-profile' })
 const goToGlucoseRecord = () => router.push('/glucose-record')
+const emitRecordGlucose = () => emit('record-glucose')
 const goToAssistant = () =>
   router.push({ path: '/assistant', query: { prefill: '请解读我的健康档案和最近血糖概况' } })
 
@@ -248,8 +264,32 @@ defineExpose({ refreshProfile: loadProfile, refreshWeeklyStats: loadWeeklyStats 
 
 <style scoped>
 .user-profile-card {
-  margin-bottom: 20px;
-  border-top: 3px solid #409eff;
+  margin-bottom: 0;
+  border: 1px solid #e8edf3 !important;
+  border-top: 3px solid #3b82f6 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04) !important;
+}
+
+.user-profile-card.is-dense {
+  border-top-width: 2px !important;
+}
+
+.user-profile-card :deep(.el-card__header) {
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid #f0f3f7;
+}
+
+.user-profile-card.is-dense :deep(.el-card__header) {
+  padding: 8px 10px 6px;
+}
+
+.user-profile-card :deep(.el-card__body) {
+  padding: 12px 14px 14px;
+}
+
+.user-profile-card.is-dense :deep(.el-card__body) {
+  padding: 8px 10px 10px;
 }
 
 .card-header {
@@ -262,22 +302,23 @@ defineExpose({ refreshProfile: loadProfile, refreshWeeklyStats: loadWeeklyStats 
 .card-header > div {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .card-header > div > span {
-  color: #303133;
-  font-weight: 600;
+  color: #1f2a37;
+  font-weight: 650;
+  font-size: 15px;
 }
 
 .card-header small,
 .weekly-heading span {
-  color: #909399;
+  color: #6b7280;
   font-size: 12px;
 }
 
 .inline-alert {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .identity-row {
@@ -291,51 +332,103 @@ defineExpose({ refreshProfile: loadProfile, refreshWeeklyStats: loadWeeklyStats 
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .identity-copy strong {
   overflow: hidden;
-  color: #303133;
-  font-size: 18px;
+  color: #1f2a37;
+  font-size: 17px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .identity-copy span {
   overflow: hidden;
-  color: #909399;
-  font-size: 13px;
+  color: #6b7280;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.identity-meta {
+  font-size: 11px !important;
+}
+
+.is-dense .identity-copy strong {
+  font-size: 15px;
+}
+
+.dense-divider {
+  height: 1px;
+  margin: 8px 0;
+  background: #f0f3f7;
+}
+
+.dense-empty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.profile-guidance.is-dense {
+  margin-top: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.weekly-grid.is-dense {
+  gap: 6px;
+}
+
+.weekly-grid.is-dense .weekly-stat {
+  padding: 6px 4px;
+}
+
+.weekly-grid.is-dense .weekly-stat strong {
+  font-size: 15px;
+}
+
+.card-actions.is-dense {
+  margin-top: 8px;
+  gap: 6px;
+}
+
+.card-actions.is-dense .el-button {
+  flex: 1;
 }
 
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 18px;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .profile-item {
   min-width: 0;
   padding: 10px 12px;
+  border: 1px solid #eef2f7;
   border-radius: 10px;
-  background: #f5f7fa;
+  background: #f8fafc;
 }
 
 .profile-item span,
 .weekly-stat span {
   display: block;
   margin-bottom: 4px;
-  color: #909399;
+  color: #6b7280;
   font-size: 12px;
 }
 
 .profile-item strong {
   display: block;
   overflow: hidden;
-  color: #303133;
+  color: #1f2a37;
   font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -346,11 +439,11 @@ defineExpose({ refreshProfile: loadProfile, refreshWeeklyStats: loadWeeklyStats 
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 14px;
+  margin-top: 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  color: #8a5a00;
-  background: #fdf6ec;
+  color: #92400e;
+  background: #fff7ed;
   font-size: 13px;
 }
 
@@ -359,13 +452,13 @@ defineExpose({ refreshProfile: loadProfile, refreshWeeklyStats: loadWeeklyStats 
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .weekly-heading > div {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .weekly-grid {
@@ -375,35 +468,37 @@ defineExpose({ refreshProfile: loadProfile, refreshWeeklyStats: loadWeeklyStats 
 }
 
 .weekly-stat {
-  padding: 12px 8px;
-  border: 1px solid #ebeef5;
+  padding: 10px 6px;
+  border: 1px solid #eef2f7;
   border-radius: 10px;
+  background: #f8fafc;
   text-align: center;
 }
 
 .weekly-stat strong {
   display: block;
-  color: #409eff;
-  font-size: 19px;
+  color: #2563eb;
+  font-size: 18px;
+  line-height: 1.2;
 }
 
 .weekly-status {
   max-width: 100%;
   height: auto;
-  margin-top: 12px;
-  padding-top: 5px;
-  padding-bottom: 5px;
+  margin-top: 10px;
+  padding-top: 4px;
+  padding-bottom: 4px;
   white-space: normal;
 }
 
 .compact-empty {
-  padding: 8px 0 2px;
+  padding: 4px 0 0;
 }
 
 .card-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 18px;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .card-actions .el-button {
