@@ -1,417 +1,576 @@
 <template>
-  <div class="assistant-container">
-    <div class="chat-header">
-      <h2>智能健康助理</h2>
-      <div class="chat-actions">
-        <el-dropdown v-if="availableModels.length > 0" @command="selectModel" style="margin-right: 10px;">
-          <el-button type="primary" plain size="small">
-            {{ selectedModel || '选择模型' }}
-            <el-icon class="el-icon--right"><arrow-down /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item
-                v-for="model in availableModels"
-                :key="model.name"
-                :command="model.name"
-              >
-                {{ model.name }}
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <el-button type="danger" plain size="small" @click="clearHistory">
-          清空对话
-        </el-button>
+  <div class="assistant-page">
+    <header class="assistant-header">
+      <div>
+        <div class="eyebrow">Health Agent</div>
+        <h2>智能健康助理</h2>
+        <p>查询真实健康数据，写入操作由您确认后执行。</p>
       </div>
-    </div>
-    
-    <div class="chat-body" ref="chatBodyRef">
-      <div v-if="loading && messages.length === 0" class="loading-container">
-        <el-skeleton :rows="3" animated />
-      </div>
-      
-      <template v-else>
-        <div v-if="messages.length === 0" class="welcome-message">
-          <div class="welcome-icon">
-            <el-icon :size="48"><ChatLineRound /></el-icon>
-          </div>
-          <h3>您好，我是小雪琪</h3>
-          <p>您的糖尿病智能健康助理，有任何健康问题都可以问我。</p>
-          <div class="suggestion-chips">
-            <el-button
-              v-for="(suggestion, index) in suggestions"
-              :key="index"
-              size="small"
-              @click="sendMessage(suggestion)"
-            >
-              {{ suggestion }}
-            </el-button>
-          </div>
-          <div class="model-status" v-if="modelStatus">
-            <el-tag :type="modelStatus === 'active' ? 'success' : 'danger'">
-              {{ modelStatus === 'active' ? 'Ollama已连接' : 'Ollama未连接' }}
+      <el-button plain :disabled="loading" @click="startNewConversation">
+        新对话
+      </el-button>
+    </header>
+
+    <main ref="chatBodyRef" class="chat-body">
+      <section v-if="messages.length === 0" class="welcome-panel">
+        <div class="welcome-icon">
+          <el-icon :size="42"><ChatLineRound /></el-icon>
+        </div>
+        <h3>您好，我是小雪琪</h3>
+        <p>
+          我可以读取您的血糖记录、生成统计摘要，并在您确认后记录新的血糖数据。
+        </p>
+        <el-tag type="success" effect="plain">默认使用 Agent 主路径</el-tag>
+      </section>
+
+      <section
+        v-for="message in messages"
+        :key="message.id"
+        class="message-row"
+        :class="message.role === 'user' ? 'message-row--user' : 'message-row--assistant'"
+      >
+        <el-avatar v-if="message.role === 'user'" :size="36" :src="userAvatar">
+          {{ userInitial }}
+        </el-avatar>
+        <el-avatar v-else :size="36" src="/assistant-avatar.png">小雪琪</el-avatar>
+
+        <article class="message-card" :class="{ 'message-card--error': message.isError }">
+          <div v-if="message.role === 'assistant' && message.mode" class="message-meta">
+            <el-tag :type="modeMeta[message.mode].type" size="small" effect="light">
+              {{ modeMeta[message.mode].label }}
             </el-tag>
+            <span v-if="message.model">{{ message.model }}</span>
+            <span v-if="message.rounds !== undefined">{{ message.rounds }} 轮</span>
           </div>
-        </div>
-        
-        <div v-for="(message, index) in messages" :key="index" class="message-container" :class="{ 'user-message': message.role === 'user', 'assistant-message': message.role === 'assistant' }">
-          <div class="message-avatar">
-            <el-avatar v-if="message.role === 'user'" :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
-            <el-avatar v-else :size="36" src="/assistant-avatar.png">小雪琪</el-avatar>
-          </div>
-          <div class="message-content">
-            <div class="message-text" v-html="formatMessage(message.content)"></div>
-            <div v-if="message.metadata?.sources && message.metadata.sources.length > 0" class="message-sources">
-              <div class="sources-title">参考资料：</div>
-              <div v-for="(source, idx) in message.metadata.sources" :key="idx" class="source-item">
-                <el-link type="primary" @click="showSourceDetail(source)">{{ source.title }}</el-link>
+
+          <div
+            v-if="message.role === 'assistant'"
+            class="message-text markdown-body"
+            v-html="formatMessage(message.content)"
+          ></div>
+          <div v-else class="message-text">{{ message.content }}</div>
+
+          <el-collapse
+            v-if="hasToolTrace(message)"
+            class="tool-trace"
+          >
+            <el-collapse-item :name="message.id">
+              <template #title>
+                <span class="tool-trace-title">
+                  <el-icon><Operation /></el-icon>
+                  工具轨迹 · {{ getToolTraces(message).length }}
+                </span>
+              </template>
+
+              <div
+                v-for="(trace, traceIndex) in getToolTraces(message)"
+                :key="`${message.id}-tool-${traceIndex}`"
+                class="tool-trace-item"
+              >
+                <div class="tool-trace-heading">
+                  <code>{{ trace.name }}</code>
+                  <el-tag
+                    v-if="trace.result"
+                    :type="trace.result.ok ? 'success' : 'danger'"
+                    size="small"
+                  >
+                    {{ trace.result.ok ? '成功' : '失败' }}
+                  </el-tag>
+                  <el-tag v-if="trace.result?.requires_confirm" type="warning" size="small">
+                    待确认
+                  </el-tag>
+                </div>
+                <div class="tool-trace-block">
+                  <span>参数</span>
+                  <pre>{{ formatJsonSummary(trace.arguments) }}</pre>
+                </div>
+                <div v-if="trace.result" class="tool-trace-block">
+                  <span>{{ trace.result.ok ? '结果' : '错误' }}</span>
+                  <pre :class="{ 'tool-error': !trace.result.ok }">{{ formatToolResult(trace.result) }}</pre>
+                </div>
               </div>
+            </el-collapse-item>
+          </el-collapse>
+
+          <div
+            v-if="message.confirmation"
+            class="confirmation-card"
+            :class="`confirmation-card--${message.confirmation.status}`"
+          >
+            <div class="confirmation-heading">
+              <el-icon><Warning /></el-icon>
+              <strong>写入前确认</strong>
             </div>
-            <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+            <p class="confirmation-note">当前尚未写入数据库，请核对以下内容：</p>
+            <pre>{{ message.confirmation.preview }}</pre>
+            <div class="confirmation-actions">
+              <el-button
+                type="primary"
+                :loading="confirmingMessageId === message.id"
+                :disabled="loading || message.confirmation.status === 'confirmed'"
+                @click="confirmWrite(message)"
+              >
+                {{ message.confirmation.status === 'confirmed' ? '已确认写入' : '确认写入' }}
+              </el-button>
+              <span v-if="message.confirmation.status === 'confirmed'" class="confirmation-success">
+                写入请求已成功执行
+              </span>
+              <span v-else-if="message.confirmation.status === 'failed'" class="confirmation-failed">
+                写入未完成，请重试
+              </span>
+            </div>
           </div>
+
+          <time class="message-time">{{ formatTime(message.timestamp) }}</time>
+        </article>
+      </section>
+
+      <div v-if="loading" class="typing-row" aria-label="助理正在回复">
+        <el-avatar :size="36" src="/assistant-avatar.png">小雪琪</el-avatar>
+        <div class="typing-indicator">
+          <span></span><span></span><span></span>
         </div>
-      </template>
-      
-      <div v-if="loading" class="typing-indicator">
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
       </div>
-    </div>
-    
-    <div class="chat-input">
+    </main>
+
+    <section class="quick-actions" aria-label="快捷提问">
+      <span class="quick-actions-label">快捷提问</span>
+      <el-button
+        v-for="shortcut in shortcuts"
+        :key="shortcut.label"
+        round
+        size="small"
+        :disabled="loading"
+        @click="useShortcut(shortcut)"
+      >
+        {{ shortcut.label }}
+      </el-button>
+    </section>
+
+    <section class="composer">
       <el-input
+        ref="inputRef"
         v-model="userInput"
         type="textarea"
         :rows="2"
-        placeholder="请输入您的问题..."
+        maxlength="4000"
+        show-word-limit
+        placeholder="例如：本周血糖统计"
         resize="none"
         @keydown.enter.prevent="handleEnterKey"
       />
-      <div class="send-options">
-        <el-checkbox v-model="useOllama" @change="handleOllamaToggle">使用Ollama</el-checkbox>
+      <div class="composer-actions">
+        <span>Enter 发送，Shift + Enter 换行</span>
         <el-button
           type="primary"
+          :loading="loading && !confirmingMessageId"
           :disabled="!userInput.trim() || loading"
           @click="sendMessage()"
         >
           发送
         </el-button>
       </div>
-    </div>
+    </section>
 
-    <!-- 知识源详情对话框 -->
-    <el-dialog
-      v-model="sourceDialogVisible"
-      title="参考资料详情"
-      width="60%"
-      :before-close="handleCloseSourceDialog"
-    >
-      <div v-if="selectedSource">
-        <h3>{{ selectedSource.title }}</h3>
-        <div class="source-content">{{ selectedSource.content }}</div>
-      </div>
-    </el-dialog>
+    <footer class="disclaimer-bar">
+      <el-icon><InfoFilled /></el-icon>
+      <span>{{ disclaimer }}</span>
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import axios from 'axios'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ChatLineRound, ArrowDown } from '@element-plus/icons-vue'
-import { assistantApi, ollamaApi } from '../api'
-import { useUserStore } from '../stores/user'
-import dayjs from 'dayjs'
+import {
+  ChatLineRound,
+  InfoFilled,
+  Operation,
+  Warning
+} from '@element-plus/icons-vue'
 import { marked } from 'marked'
 
-const userStore = useUserStore()
-const chatBodyRef = ref<HTMLElement | null>(null)
-const messages = ref<any[]>([])
-const userInput = ref('')
-const loading = ref(false)
-const currentConversationId = ref<string | null>(null)
-const userAvatar = ref(userStore.user.avatar || '')
-const userInitial = computed(() => {
-  return userStore.user.name ? userStore.user.name.charAt(0).toUpperCase() : 'U'
-})
+import { agentApi } from '../api/agent'
+import type {
+  AgentChatResponse,
+  AgentHistoryMessage,
+  AgentToolCall,
+  ToolResult
+} from '../api/agent'
+import { useUserStore } from '../stores/user'
 
-// Ollama相关
-const useOllama = ref(false)
-const modelStatus = ref<'active' | 'inactive' | null>(null)
-const availableModels = ref<any[]>([])
-const selectedModel = ref<string>('')
-const ollamaConversation = ref<Array<{role: string, content: string}>>([])
+type AgentMode = AgentChatResponse['mode']
+type ConfirmationStatus = 'pending' | 'submitting' | 'confirmed' | 'failed'
+type TagType = 'success' | 'warning' | 'info' | 'danger'
 
-// 系统提示词
-const systemPrompt = `你是一个专业的糖尿病健康助理，名为"小雪琪"。你的任务是帮助用户管理糖尿病，提供健康建议，解答相关问题。
-请遵循以下原则：
-1. 提供准确、科学的糖尿病相关信息和建议
-2. 根据用户的具体情况提供个性化建议
-3. 使用友好、专业的语气，避免医学术语过于专业化
-4. 不要假装你是医生，重要医疗决策应建议用户咨询专业医生
-5. 回答要简洁明了，突出重点
-6. 用中文回答用户的问题`
+interface ConfirmationState {
+  originalMessage: string
+  preview: string
+  status: ConfirmationStatus
+}
 
-// 知识源详情相关
-const sourceDialogVisible = ref(false)
-const selectedSource = ref<any>(null)
+interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: string
+  mode?: AgentMode
+  model?: string | null
+  rounds?: number
+  toolCalls?: AgentToolCall[]
+  toolResults?: ToolResult[]
+  confirmation?: ConfirmationState
+  includeInHistory?: boolean
+  isError?: boolean
+}
 
-const suggestions = [
-  '什么是糖尿病?',
-  '如何控制血糖?',
-  '糖尿病患者的饮食建议',
-  '运动对血糖的影响',
-  '低血糖的处理方法'
+interface Shortcut {
+  label: string
+  prompt: string
+  action: 'send' | 'prefill'
+}
+
+interface ToolTrace {
+  name: string
+  arguments: Record<string, unknown>
+  result?: ToolResult
+}
+
+const FALLBACK_DISCLAIMER =
+  '说明：我是健康管理助手，不是执业医师。内容仅用于健康管理参考，不能替代诊断或治疗；如有急症请及时就医。'
+
+const modeMeta: Record<AgentMode, { label: string; type: TagType }> = {
+  agent: { label: 'Agent', type: 'success' },
+  fallback: { label: '规则模式', type: 'warning' },
+  disabled: { label: '已关闭', type: 'info' }
+}
+
+const measurementTimeLabels: Record<string, string> = {
+  BEFORE_BREAKFAST: '早餐前 / 空腹',
+  AFTER_BREAKFAST: '早餐后',
+  BEFORE_LUNCH: '午餐前',
+  AFTER_LUNCH: '午餐后',
+  BEFORE_DINNER: '晚餐前',
+  AFTER_DINNER: '晚餐后',
+  BEFORE_SLEEP: '睡前',
+  MIDNIGHT: '凌晨',
+  OTHER: '其他'
+}
+
+const shortcuts: Shortcut[] = [
+  { label: '最近血糖', prompt: '最近血糖', action: 'send' },
+  { label: '本周血糖统计', prompt: '本周血糖统计', action: 'send' },
+  { label: '记录血糖引导', prompt: '记录血糖 6.5 空腹', action: 'prefill' }
 ]
 
-onMounted(async () => {
-  loading.value = true
-  try {
-    // 检查Ollama服务状态
-    checkOllamaStatus()
-    
-    // 获取历史消息
-    const response = await assistantApi.getConversationHistory()
-    messages.value = response.data
-    
-    // 如果有消息，设置当前对话ID
-    if (response.data && response.data.length > 0) {
-      currentConversationId.value = response.data[0].conversation_id
-    }
-    
-    scrollToBottom()
-  } catch (error) {
-    console.error('获取聊天历史失败', error)
-    ElMessage.error('获取聊天历史失败')
-  } finally {
-    loading.value = false
+const route = useRoute()
+const userStore = useUserStore()
+const chatBodyRef = ref<HTMLElement | null>(null)
+const inputRef = ref<{ focus: () => void } | null>(null)
+const messages = ref<ChatMessage[]>([])
+const userInput = ref('')
+const loading = ref(false)
+const confirmingMessageId = ref<string | null>(null)
+const currentConversationId = ref<string | null>(null)
+const disclaimer = ref(FALLBACK_DISCLAIMER)
+let messageSequence = 0
+
+const userAvatar = computed(() => userStore.user?.avatar || '')
+const userInitial = computed(() => {
+  const name = userStore.user?.name || userStore.user?.email || '用户'
+  return name.charAt(0).toUpperCase()
+})
+
+onMounted(() => {
+  const prefill = route.query.prefill
+  if (typeof prefill === 'string') {
+    userInput.value = prefill.slice(0, 4000)
+    nextTick(() => inputRef.value?.focus())
   }
 })
 
-// 检查Ollama服务状态
-const checkOllamaStatus = async () => {
-  try {
-    const healthResponse = await ollamaApi.checkHealth()
-    if (healthResponse.data && healthResponse.data.status === 'ok') {
-      modelStatus.value = 'active'
-      // 加载可用模型
-      const modelsResponse = await ollamaApi.listModels()
-      if (modelsResponse.data && modelsResponse.data.models) {
-        availableModels.value = modelsResponse.data.models
-        if (availableModels.value.length > 0) {
-          selectedModel.value = availableModels.value[0].name
-        }
-      }
-    } else {
-      modelStatus.value = 'inactive'
-    }
-  } catch (error) {
-    console.error('Ollama服务检查失败', error)
-    modelStatus.value = 'inactive'
-  }
+const makeMessageId = (prefix: string) => {
+  messageSequence += 1
+  return `${prefix}-${Date.now()}-${messageSequence}`
 }
 
-const handleOllamaToggle = (val: boolean) => {
-  if (val && modelStatus.value !== 'active') {
-    ElMessage.warning('Ollama服务未连接，请检查后端服务是否正常运行')
-    useOllama.value = false
-    return
-  }
-  
-  if (val) {
-    // 清空当前Ollama对话历史
-    ollamaConversation.value = []
-    
-    // 如果有现有消息，将其添加到Ollama对话历史中
-    if (messages.value.length > 0) {
-      messages.value.forEach(msg => {
-        ollamaConversation.value.push({
-          role: msg.role,
-          content: msg.content
-        })
-      })
-    }
-  }
+const buildHistory = (): AgentHistoryMessage[] => {
+  return messages.value
+    .filter(message => message.includeInHistory !== false)
+    .map(message => ({ role: message.role, content: message.content.slice(0, 12000) }))
+    .slice(-50)
 }
 
-const selectModel = (modelName: string) => {
-  selectedModel.value = modelName
-  ElMessage.success(`已选择模型: ${modelName}`)
-}
-
-const handleEnterKey = (e: KeyboardEvent) => {
-  if (e.shiftKey) return
+const handleEnterKey = (event: KeyboardEvent) => {
+  if (event.shiftKey) return
   sendMessage()
 }
 
+const useShortcut = (shortcut: Shortcut) => {
+  if (shortcut.action === 'prefill') {
+    userInput.value = shortcut.prompt
+    nextTick(() => inputRef.value?.focus())
+    return
+  }
+
+  sendMessage(shortcut.prompt)
+}
+
 const sendMessage = async (text?: string) => {
-  const messageText = text || userInput.value.trim()
+  const messageText = (text ?? userInput.value).trim()
   if (!messageText || loading.value) return
-  
-  // 添加用户消息到界面
-  const userMessage = {
-    id: 'temp-' + Date.now(),
+
+  const history = buildHistory()
+  messages.value.push({
+    id: makeMessageId('user'),
     role: 'user',
     content: messageText,
     timestamp: new Date().toISOString()
-  }
-  
-  messages.value.push(userMessage)
-  
-  // 更新Ollama对话历史
-  if (useOllama.value) {
-    ollamaConversation.value.push({
-      role: 'user',
-      content: messageText
-    })
-  }
-  
+  })
+
   userInput.value = ''
-  scrollToBottom()
-  
   loading.value = true
+  scrollToBottom()
+
   try {
-    if (useOllama.value) {
-      // 使用Ollama API
-      console.log('Ollama请求参数:', {
-        messages: ollamaConversation.value,
-        model: selectedModel.value,
-        system: systemPrompt
-      });
-      
-      const response = await ollamaApi.chat(
-        ollamaConversation.value,
-        selectedModel.value,
-        systemPrompt,  // 添加系统提示词
-        0.7,  // 设置温度参数
-        2000  // 最大生成token数
-      );
-      
-      console.log('Ollama API响应:', response.data);
-      
-      // 处理Ollama API的返回格式，支持两种可能的格式
-      if (response.data) {
-        let content = '';
-        let role = 'assistant';
-        
-        // 检查response.data.message格式
-        if (response.data.message && typeof response.data.message === 'object') {
-          // 格式1: {message: {role: 'assistant', content: '...'}}
-          content = response.data.message.content;
-          role = response.data.message.role;
-        } 
-        // 检查是否直接返回了role和content字段
-        else if (response.data.role && response.data.content) {
-          // 格式2: {role: 'assistant', content: '...'}
-          content = response.data.content;
-          role = response.data.role;
-        }
-        // 检查是否只返回了response字段
-        else if (response.data.response) {
-          // 格式3: {response: '...'}
-          content = response.data.response;
-        } else {
-          throw new Error('无法解析Ollama响应格式');
-        }
-        
-        // 添加助手回复到界面
-        const assistantMessage = {
-          id: 'ollama-' + Date.now(),
-          role: 'assistant',
-          content: content,
-          timestamp: new Date().toISOString(),
-          metadata: { model: selectedModel.value }
-        }
-        
-        messages.value.push(assistantMessage)
-        
-        // 更新Ollama对话历史
-        ollamaConversation.value.push({
-          role: 'assistant',
-          content: content
-        })
-      } else {
-        throw new Error('Ollama响应为空')
-      }
-    } else {
-      // 使用原有的智能助手API
-      const response = await assistantApi.sendMessage(messageText, currentConversationId.value || undefined)
-      
-      // 保存当前对话ID
-      if (response.data.conversation_id) {
-        currentConversationId.value = response.data.conversation_id
-      }
-      
-      // 添加助手回复到界面
-      messages.value.push({
-        id: response.data.message_id,
-        role: 'assistant',
-        content: response.data.message,
-        timestamp: new Date().toISOString(),
-        metadata: response.data.sources ? { sources: response.data.sources } : undefined
-      })
-    }
-    
-    scrollToBottom()
-  }   catch (error) {
-    console.error('发送消息失败', error)
-    
-    // 获取错误信息
-    let errorMsg = '发送消息失败，请稍后再试';
-    if (error.response && error.response.data) {
-      errorMsg = `错误: ${error.response.data.detail || error.response.data.message || '未知错误'}`;
-    } else if (error.message) {
-      errorMsg = `错误: ${error.message}`;
-    }
-    
-    ElMessage.error(errorMsg);
-    
-    // 在界面上显示错误消息
-    messages.value.push({
-      id: 'error-' + Date.now(),
-      role: 'assistant',
-      content: `抱歉，我遇到了一些问题，无法回答您的问题。${errorMsg}`,
-      timestamp: new Date().toISOString()
+    const response = await agentApi.chat({
+      message: messageText,
+      conversation_id: currentConversationId.value,
+      history,
+      confirm_write: false
     })
+    appendAgentResponse(response.data, messageText)
+  } catch (error: unknown) {
+    appendRequestError(error)
   } finally {
     loading.value = false
+    scrollToBottom()
   }
 }
 
-const clearHistory = () => {
-  ElMessageBox.confirm('确定要清空所有对话历史吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      if (!useOllama.value) {
-        await assistantApi.clearConversation()
-      }
-      messages.value = []
-      ollamaConversation.value = []
-      currentConversationId.value = null
-      ElMessage.success('对话历史已清空')
-    } catch (error) {
-      console.error('清空对话历史失败', error)
-      ElMessage.error('清空对话历史失败')
+const appendAgentResponse = (response: AgentChatResponse, originalMessage: string) => {
+  currentConversationId.value = response.conversation_id
+  disclaimer.value = response.disclaimer || FALLBACK_DISCLAIMER
+
+  const pendingResult = response.tool_results.find(result => result.requires_confirm === true)
+  messages.value.push({
+    id: makeMessageId('assistant'),
+    role: 'assistant',
+    content: response.reply,
+    timestamp: new Date().toISOString(),
+    mode: response.mode,
+    model: response.model,
+    rounds: response.rounds,
+    toolCalls: response.tool_calls,
+    toolResults: response.tool_results,
+    confirmation: pendingResult
+      ? {
+          originalMessage,
+          preview: buildConfirmationPreview(pendingResult, response.reply),
+          status: 'pending'
+        }
+      : undefined
+  })
+}
+
+const confirmWrite = async (message: ChatMessage) => {
+  const confirmation = message.confirmation
+  if (!confirmation || loading.value || confirmation.status === 'confirmed') return
+
+  confirmation.status = 'submitting'
+  confirmingMessageId.value = message.id
+  loading.value = true
+
+  try {
+    const response = await agentApi.chat({
+      message: confirmation.originalMessage,
+      conversation_id: currentConversationId.value,
+      confirm_write: true
+    })
+
+    currentConversationId.value = response.data.conversation_id
+    disclaimer.value = response.data.disclaimer || FALLBACK_DISCLAIMER
+
+    const writeResult = response.data.tool_results.find(
+      result => result.name === 'add_glucose_record'
+    )
+    const writeSucceeded = Boolean(
+      writeResult?.ok && writeResult.requires_confirm !== true
+    )
+
+    appendAgentResponse(response.data, confirmation.originalMessage)
+
+    if (writeSucceeded) {
+      confirmation.status = 'confirmed'
+      ElMessage.success('血糖记录已确认写入')
+    } else {
+      confirmation.status = 'failed'
+      ElMessage.error(writeResult?.error || '写入未完成，请核对助理回复后重试')
     }
-  }).catch(() => {})
+  } catch (error: unknown) {
+    confirmation.status = 'failed'
+    appendRequestError(error)
+  } finally {
+    confirmingMessageId.value = null
+    loading.value = false
+    scrollToBottom()
+  }
+}
+
+const appendRequestError = (error: unknown) => {
+  const errorMessage = getErrorMessage(error)
+  const status = axios.isAxiosError(error) ? error.response?.status : undefined
+
+  if (status === 401) {
+    ElMessage.warning(errorMessage)
+  } else {
+    ElMessage.error(errorMessage)
+  }
+
+  messages.value.push({
+    id: makeMessageId('error'),
+    role: 'assistant',
+    content: errorMessage,
+    timestamp: new Date().toISOString(),
+    includeInHistory: false,
+    isError: true
+  })
+}
+
+const getErrorMessage = (error: unknown): string => {
+  if (!axios.isAxiosError(error)) {
+    return error instanceof Error ? error.message : '发送失败，请稍后重试。'
+  }
+
+  const status = error.response?.status
+  if (status === 401) {
+    return '登录状态已过期，正在跳转登录页，请重新登录。'
+  }
+  if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT' || /timeout/i.test(error.message)) {
+    return '助理响应超时（90 秒），请稍后重试或缩短问题。'
+  }
+  if (!error.response) {
+    return '无法连接后端服务，请检查网络、API 地址与后端是否已启动。'
+  }
+
+  const detail = (error.response.data as { detail?: unknown; message?: unknown } | undefined)
+  const serverMessage = detail?.detail ?? detail?.message
+  if (typeof serverMessage === 'string' && serverMessage.trim()) {
+    return `请求失败：${serverMessage}`
+  }
+
+  return `请求失败（HTTP ${status ?? '未知'}），请稍后重试。`
+}
+
+const startNewConversation = async () => {
+  if (messages.value.length > 0) {
+    try {
+      await ElMessageBox.confirm(
+        '这会清空当前页面中的对话，并开始一个新的 Agent 会话。',
+        '开始新对话',
+        {
+          confirmButtonText: '开始新对话',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+    } catch {
+      return
+    }
+  }
+
+  messages.value = []
+  currentConversationId.value = null
+  disclaimer.value = FALLBACK_DISCLAIMER
+  userInput.value = ''
+  ElMessage.success('已开始新对话')
+}
+
+const hasToolTrace = (message: ChatMessage) => {
+  return Boolean(message.toolCalls?.length || message.toolResults?.length)
+}
+
+const getToolTraces = (message: ChatMessage): ToolTrace[] => {
+  const toolCalls = message.toolCalls || []
+  const toolResults = message.toolResults || []
+  const count = Math.max(toolCalls.length, toolResults.length)
+
+  return Array.from({ length: count }, (_, index) => ({
+    name: toolCalls[index]?.name || toolResults[index]?.name || `tool_${index + 1}`,
+    arguments: toolCalls[index]?.arguments || {},
+    result: toolResults[index]
+  }))
+}
+
+const formatToolResult = (result: ToolResult) => {
+  if (!result.ok) return result.error || '工具执行失败'
+  if (result.data === undefined || result.data === null) return '执行成功'
+  return formatJsonSummary(result.data)
+}
+
+const formatJsonSummary = (value: unknown) => {
+  try {
+    const formatted = typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+    if (!formatted) return '—'
+    return formatted.length > 800 ? `${formatted.slice(0, 800)}…` : formatted
+  } catch {
+    return String(value)
+  }
+}
+
+const buildConfirmationPreview = (result: ToolResult, reply: string) => {
+  if (isRecord(result.data)) {
+    const rawPreview = isRecord(result.data.preview) ? result.data.preview : result.data
+    const lines: string[] = []
+
+    if (rawPreview.value !== undefined) {
+      lines.push(`血糖值：${rawPreview.value} mmol/L`)
+    }
+    if (typeof rawPreview.measurement_time === 'string') {
+      const label = measurementTimeLabels[rawPreview.measurement_time] || rawPreview.measurement_time
+      lines.push(`测量时段：${label}`)
+    }
+    if (typeof rawPreview.measurement_method === 'string') {
+      lines.push(`测量方式：${rawPreview.measurement_method}`)
+    }
+    if (typeof rawPreview.notes === 'string' && rawPreview.notes.trim()) {
+      lines.push(`备注：${rawPreview.notes}`)
+    }
+
+    if (lines.length > 0) return lines.join('\n')
+    return formatJsonSummary(rawPreview)
+  }
+
+  return reply.replace(FALLBACK_DISCLAIMER, '').trim() || '请确认是否执行本次写入。'
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+const escapeHtml = (text: string) => {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
 const formatMessage = (text: string) => {
-  // 尝试将文本作为Markdown渲染
   try {
-    return marked(text)
-  } catch (e) {
-    // 如果Markdown渲染失败，退回到简单的HTML转换
-    return text.replace(/\n/g, '<br>')
+    return marked.parse(escapeHtml(text), { breaks: true, gfm: true }) as string
+  } catch {
+    return escapeHtml(text).replace(/\n/g, '<br>')
   }
 }
 
 const formatTime = (timestamp: string) => {
-  return dayjs(timestamp).format('HH:mm')
+  return new Intl.DateTimeFormat('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date(timestamp))
 }
 
 const scrollToBottom = () => {
@@ -421,470 +580,409 @@ const scrollToBottom = () => {
     }
   })
 }
-
-const showSourceDetail = (source: any) => {
-  selectedSource.value = source
-  sourceDialogVisible.value = true
-}
-
-const handleCloseSourceDialog = () => {
-  sourceDialogVisible.value = false
-  selectedSource.value = null
-}
 </script>
 
 <style scoped>
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 定义主题色变量 */
-:root {
-  --metric-color: #2ecc71; /* 绿色 */
-  --diet-suggestion-color: #e67e22; /* 橙色 */
-  --diet-record-color: #f1c40f; /* 黄色 */
-  --glucose-monitor-color: #3498db; /* 蓝色 */
-  --reminder-color: #9b59b6; /* 紫色 */
-  --knowledge-color: #34495e; /* 深蓝灰色 */
-  --primary-color: #0072ff; /* 基础蓝色 */
-  --primary-color-light: #eaf5ff; /* 基础蓝色浅色版 */
-  --background-color: #f0f4f8; /* 整体背景色 */
-  --text-color-primary: #2c3e50; /* 主要文本颜色 */
-  --text-color-secondary: #576b81; /* 次要文本颜色 */
-  --border-color: #eef2f7; /* 边框颜色 */
-}
-
-.assistant-container {
+.assistant-page {
+  --assistant-primary: #2563eb;
+  --assistant-primary-soft: #eff6ff;
+  --assistant-border: #e5e7eb;
+  --assistant-text: #1f2937;
+  --assistant-muted: #64748b;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  background-color: var(--background-color); /* 与DashboardView保持一致 */
-  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif; /* 与DashboardView保持一致 */
-  padding: 24px; /* 与DashboardView的容器padding一致 */
+  min-height: calc(100vh - 96px);
+  padding: 24px;
+  color: var(--assistant-text);
+  background: #f4f7fb;
 }
 
-.chat-header {
+.assistant-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color); /* 使用主题边框色 */
-  background-color: white;
-  border-radius: 16px 16px 0 0; /* 圆角与卡片保持一致 */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.03); /* 浅阴影 */
-  margin-bottom: 16px;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+  border: 1px solid var(--assistant-border);
+  border-radius: 18px 18px 0 0;
+  background: #ffffff;
 }
 
-.chat-header h2 {
+.assistant-header h2 {
+  margin: 2px 0 6px;
+  font-size: 24px;
+}
+
+.assistant-header p {
   margin: 0;
-  font-size: 1.5rem;
-  color: var(--primary-color); /* 使用主题蓝色 */
-  font-weight: 600;
+  color: var(--assistant-muted);
+}
+
+.eyebrow {
+  color: var(--assistant-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .chat-body {
   flex: 1;
+  min-height: 360px;
+  max-height: calc(100vh - 390px);
   overflow-y: auto;
-  padding: 16px;
-  background-color: white; /* 聊天背景为白色 */
-  border-radius: 16px; /* 圆角与卡片保持一致 */
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05); /* 浅阴影 */
-  margin-bottom: 16px;
+  padding: 24px;
+  border-right: 1px solid var(--assistant-border);
+  border-left: 1px solid var(--assistant-border);
+  background: #ffffff;
+  scroll-behavior: smooth;
 }
 
-.welcome-message {
+.welcome-panel {
   display: flex;
+  min-height: 300px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  height: 100%;
-  color: #303133;
-  animation: fadeIn 0.8s ease-in-out;
+}
+
+.welcome-panel h3 {
+  margin: 14px 0 8px;
+  font-size: 24px;
+}
+
+.welcome-panel p {
+  max-width: 620px;
+  margin: 0 0 18px;
+  color: var(--assistant-muted);
+  line-height: 1.7;
 }
 
 .welcome-icon {
-  margin-bottom: 20px;
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  border-radius: 24px;
+  color: var(--assistant-primary);
+  background: var(--assistant-primary-soft);
 }
 
-.welcome-message h3 {
-  margin: 0 0 8px 0;
-  font-size: 1.5rem;
-  color: var(--text-color-primary); /* 使用主要文本颜色 */
+.message-row,
+.typing-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 22px;
 }
 
-.welcome-message p {
-  margin: 0 0 24px 0;
-  color: var(--text-color-secondary); /* 使用次要文本颜色 */
+.message-row--user {
+  flex-direction: row-reverse;
 }
 
-.model-status {
-  margin-top: 20px;
+.message-card {
+  width: fit-content;
+  max-width: min(760px, 78%);
+  padding: 14px 16px 10px;
+  border: 1px solid var(--assistant-border);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
 }
 
-.suggestion-chips {
+.message-row--user .message-card {
+  border-color: #bfdbfe;
+  background: var(--assistant-primary-soft);
+}
+
+.message-card--error {
+  border-color: #fecaca;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.message-meta {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  align-items: center;
   gap: 8px;
-  max-width: 600px;
-}
-
-.suggestion-chips .el-button {
-  border-radius: 20px; /* 圆角 */
-  font-weight: 600;
-  background-color: var(--primary-color-light); /* 浅蓝色背景 */
-  color: var(--primary-color); /* 蓝色文字 */
-  border: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-}
-
-.suggestion-chips .el-button:hover {
-  background-color: var(--primary-color);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.message-container {
-  display: flex;
-  margin-bottom: 16px;
-  gap: 12px;
-  align-items: flex-start; /* 消息顶部对齐 */
-}
-
-.user-message {
-  flex-direction: row-reverse;
-  justify-content: flex-end; /* 用户消息靠右 */
-}
-
-.message-avatar {
-  flex-shrink: 0;
-}
-
-.message-content {
-  padding: 12px;
-  border-radius: 16px; /* 圆角与Dashboard卡片一致 */
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05); /* 阴影与Dashboard卡片一致 */
-  max-width: 70%;
-  animation: fadeInUp 0.5s ease-in-out forwards; /* 添加动画 */
-  opacity: 0; /* 初始透明 */
-  position: relative; /* 为animation-delay提供上下文 */
-}
-
-.message-container:nth-child(even) .message-content { animation-delay: 0.1s; } /* 错落动画 */
-.message-container:nth-child(odd) .message-content { animation-delay: 0.2s; } /* 错落动画 */
-
-.user-message .message-content {
-  background-color: var(--primary-color-light); /* 浅蓝色背景 */
-  color: var(--text-color-primary); /* 主要文本颜色 */
-  margin-left: auto; /* 用户消息靠右 */
-}
-
-.assistant-message .message-content {
-  background-color: white; /* 助手消息白色背景 */
-  color: var(--text-color-primary); /* 主要文本颜色 */
-  margin-right: auto; /* 助手消息靠左 */
-  border: 1px solid var(--border-color); /* 浅边框 */
+  margin-bottom: 9px;
+  color: var(--assistant-muted);
+  font-size: 12px;
 }
 
 .message-text {
-  white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.6; /* 更好的阅读体验 */
-  color: var(--text-color-primary);
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.markdown-body {
+  white-space: normal;
+}
+
+.markdown-body :deep(p) {
+  margin: 0 0 10px;
+}
+
+.markdown-body :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+
+.markdown-body :deep(code) {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: #f1f5f9;
 }
 
 .message-time {
-  margin-top: 6px;
-  font-size: 0.75rem;
-  color: var(--text-color-secondary);
+  display: block;
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 11px;
   text-align: right;
 }
 
-.chat-input {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  background-color: white;
-  border-top: 1px solid var(--border-color);
-  border-radius: 0 0 16px 16px; /* 底部圆角 */
-  box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.03); /* 浅阴影 */
+.tool-trace {
+  margin-top: 12px;
+  border-top: 1px solid var(--assistant-border);
 }
 
-.chat-input .el-textarea__inner {
-  border-radius: 8px; /* 输入框圆角 */
-  border: 1px solid var(--border-color);
-  padding: 8px 12px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.chat-input .el-textarea__inner:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(0, 114, 255, 0.2);
-}
-
-.send-options {
-  display: flex;
-  justify-content: space-between;
+.tool-trace-title {
+  display: inline-flex;
   align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: 13px;
 }
 
-.send-options .el-checkbox {
-  color: var(--text-color-secondary);
+.tool-trace-item {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
 }
 
-.send-options .el-button {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  border-radius: 8px; /* 按钮圆角 */
-  font-weight: 600;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
+.tool-trace-item + .tool-trace-item {
+  margin-top: 10px;
 }
 
-.send-options .el-button:hover {
-  background-color: #0056b3;
-  border-color: #0056b3;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.tool-trace-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tool-trace-heading code {
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.tool-trace-block > span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--assistant-muted);
+  font-size: 12px;
+}
+
+.tool-trace-block pre,
+.confirmation-card pre {
+  overflow-x: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.tool-trace-block + .tool-trace-block {
+  margin-top: 10px;
+}
+
+.tool-error {
+  color: #b91c1c;
+}
+
+.confirmation-card {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #fbbf24;
+  border-radius: 12px;
+  background: #fffbeb;
+}
+
+.confirmation-card--confirmed {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.confirmation-card--failed {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.confirmation-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #92400e;
+}
+
+.confirmation-note {
+  margin: 8px 0;
+  color: #78350f;
+  font-size: 13px;
+}
+
+.confirmation-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.confirmation-success {
+  color: #15803d;
+  font-size: 13px;
+}
+
+.confirmation-failed {
+  color: #b91c1c;
+  font-size: 13px;
 }
 
 .typing-indicator {
   display: flex;
-  gap: 4px;
-  padding: 12px;
-  margin-bottom: 16px;
-  width: fit-content;
-  background-color: white;
+  align-items: center;
+  gap: 5px;
+  padding: 15px 18px;
+  border: 1px solid var(--assistant-border);
   border-radius: 16px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+  background: #ffffff;
 }
 
-.typing-dot {
-  width: 8px;
-  height: 8px;
+.typing-indicator span {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background-color: var(--primary-color); /* 使用主题色 */
-  animation: typing-animation 1.4s infinite ease-in-out;
+  background: #94a3b8;
+  animation: typing 1.2s infinite ease-in-out;
 }
 
-@keyframes typing-animation {
-  0%, 60%, 100% {
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border: 1px solid var(--assistant-border);
+  background: #f8fafc;
+}
+
+.quick-actions-label {
+  margin-right: 2px;
+  color: var(--assistant-muted);
+  font-size: 13px;
+}
+
+.composer {
+  padding: 16px 18px 12px;
+  border-right: 1px solid var(--assistant-border);
+  border-left: 1px solid var(--assistant-border);
+  background: #ffffff;
+}
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 10px;
+  color: var(--assistant-muted);
+  font-size: 12px;
+}
+
+.disclaimer-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px 18px;
+  border: 1px solid #dbeafe;
+  border-radius: 0 0 18px 18px;
+  color: #475569;
+  background: #eff6ff;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.disclaimer-bar .el-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--assistant-primary);
+}
+
+@keyframes typing {
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
-    opacity: 0.6;
+    opacity: 0.45;
   }
   30% {
-    transform: translateY(-6px);
+    transform: translateY(-4px);
     opacity: 1;
   }
 }
 
-.loading-container {
-  padding: 20px;
-  background-color: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-}
+@media (max-width: 768px) {
+  .assistant-page {
+    min-height: calc(100vh - 64px);
+    padding: 12px;
+  }
 
-.message-sources {
-  margin-top: 10px;
-  font-size: 0.9em;
-  border-top: 1px solid var(--border-color); /* 使用主题边框色 */
-  padding-top: 8px;
-}
+  .assistant-header {
+    align-items: flex-start;
+    padding: 16px;
+  }
 
-.sources-title {
-  font-weight: bold;
-  margin-bottom: 4px;
-  color: var(--text-color-primary);
-}
+  .assistant-header p {
+    display: none;
+  }
 
-.source-item {
-  margin-bottom: 4px;
-}
+  .chat-body {
+    max-height: none;
+    padding: 16px 12px;
+  }
 
-.source-item .el-link {
-  color: var(--primary-color);
-  font-size: 0.85em;
-  transition: color 0.2s;
-}
+  .message-card {
+    max-width: calc(100% - 48px);
+  }
 
-.source-item .el-link:hover {
-  color: #0056b3;
-}
+  .composer-actions > span {
+    display: none;
+  }
 
-.source-content {
-  margin-top: 10px;
-  padding: 10px;
-  background-color: var(--background-color); /* 使用背景色 */
-  border-radius: 8px; /* 圆角 */
-  max-height: 400px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  border: 1px solid var(--border-color);
-  color: var(--text-color-primary);
+  .composer-actions {
+    justify-content: flex-end;
+  }
 }
-
-:deep(.message-text) {
-  line-height: 1.6;
-}
-
-:deep(.message-text p) {
-  margin: 0.5em 0;
-}
-
-:deep(.message-text ul, .message-text ol) {
-  padding-left: 20px;
-}
-
-:deep(.message-text code) {
-  background-color: #f5f5f5;
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-family: monospace;
-  color: #c7254e;
-}
-
-:deep(.message-text pre) {
-  background-color: #f5f5f5;
-  padding: 10px;
-  border-radius: 4px;
-  overflow-x: auto;
-}
-
-:deep(.message-text strong) {
-  color: var(--primary-color); /* 加粗文本使用主题色 */
-}
-
-/* 调整对话框样式 */
-.el-dialog {
-  border-radius: 16px;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-}
-
-:deep(.el-dialog__header) {
-  background-color: var(--background-color);
-  border-bottom: 1px solid var(--border-color);
-  border-radius: 16px 16px 0 0;
-  padding: 16px 20px;
-}
-
-:deep(.el-dialog__title) {
-  color: var(--text-color-primary);
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-
-:deep(.el-dialog__body) {
-  padding: 20px;
-  color: var(--text-color-primary);
-}
-
-/* Element Plus 组件样式覆盖 */
-
-/* Dropdown 按钮 */
-.chat-actions .el-dropdown .el-button {
-  border-radius: 20px; /* 按钮圆角 */
-  font-weight: 600;
-  padding: 8px 15px;
-  transition: all 0.2s ease;
-}
-
-.chat-actions .el-dropdown .el-button--primary.is-plain {
-  background-color: var(--primary-color-light);
-  color: var(--primary-color);
-  border-color: var(--primary-color-light);
-}
-
-.chat-actions .el-dropdown .el-button--primary.is-plain:hover {
-  background-color: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Dropdown 菜单 */
-:deep(.el-dropdown-menu) {
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); 
-  border: 1px solid var(--border-color);
-  padding: 8px;
-}
-
-:deep(.el-dropdown-menu__item) {
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: var(--text-color-primary);
-}
-
-:deep(.el-dropdown-menu__item:hover) {
-  background-color: var(--primary-color-light);
-  color: var(--primary-color);
-}
-
-/* Checkbox */
-.send-options .el-checkbox__input.is-checked .el-checkbox__inner {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.send-options .el-checkbox__label {
-  color: var(--text-color-secondary);
-}
-
-/* Tag */
-.model-status .el-tag {
-  border-radius: 16px; /* 大圆角 */
-  font-weight: 500;
-  padding: 0 12px;
-  height: 32px;
-  line-height: 30px;
-}
-
-.model-status .el-tag--success {
-  background-color: rgba(46, 204, 113, 0.15); /* 绿色浅色背景 */
-  border-color: rgba(46, 204, 113, 0.3); /* 绿色边框 */
-  color: #27ae60; /* 深绿色文本 */
-}
-
-.model-status .el-tag--danger {
-  background-color: rgba(231, 76, 60, 0.15); /* 红色浅色背景 */
-  border-color: rgba(231, 76, 60, 0.3); /* 红色边框 */
-  color: #c0392b; /* 深红色文本 */
-}
-
-/* 移除原有的变量定义，现在从:root获取 */
-/*
-:root {
-  --background-color: #f0f4f8;
-  --primary-color: #409EFF;
-  --primary-color-light: #ecf5ff;
-  --text-color-primary: #303133;
-  --text-color-secondary: #909399;
-  --border-color: #dcdfe6;
-}
-*/
 </style>
