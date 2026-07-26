@@ -1,7 +1,9 @@
 # Agent 设计说明
 
 > 状态：设计冻结（实现中）  
-> 原则：**模型只提议；权限、校验、写库由 Python 确定性执行**
+> 原则：**模型只提议；权限、校验、写库由 Python 确定性执行**  
+> 智能化计划与水位：[agent-intelligence-plan.md](./agent-intelligence-plan.md)  
+> **行为验收（意图级）**：[agent-behavior-spec.md](./agent-behavior-spec.md)
 
 ## 1. 为什么做 Agent
 

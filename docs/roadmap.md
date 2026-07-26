@@ -10,6 +10,14 @@
 
 分支建议：`feat/agent-upgrade`（当前）→ 完成后 PR 合入 `master`。
 
+### Agent 专项文档（实现时优先打开）
+
+| 文档 | 用途 |
+|------|------|
+| [agent-intelligence-plan.md](./agent-intelligence-plan.md) | 智能化完整计划、P0/P1 范围、阶段拆分 |
+| [agent-behavior-spec.md](./agent-behavior-spec.md) | 意图→tool→回复模板→前端展示的验收清单 |
+| [agent-design.md](./agent-design.md) | 运行时、包结构、tool schema |
+
 ---
 
 ## Phase A — 工程底座（1–2 天）
@@ -76,11 +84,11 @@
 
 见 [frontend.md](./frontend.md)。
 
-- [ ] `api/agent.ts`  
-- [ ] `AssistantView` 走 Agent；工具轨迹；确认卡片  
-- [ ] 超时 60–90s；mode 标签  
-- [ ] 快捷芯片  
-- [ ] 可选：Dashboard「解读本周血糖」跳转  
+- [x] `api/agent.ts`
+- [x] `AssistantView` 走 Agent；工具轨迹；确认卡片
+- [x] 超时 60–90s；mode 标签
+- [x] 快捷芯片
+- [ ] 可选：Dashboard「解读本周血糖」跳转（助理页已支持 `prefill` query，Dashboard 未接线）
 
 ### 完成定义
 
@@ -128,4 +136,5 @@
 |------|------|------|
 | 2026-07-26 | 开发文档体系 | docs/* 与 .env.example |
 | 2026-07-26 | Phase A + Phase B | SQLite/Uvicorn 验收通过；Gemini Agent proxy + fallback；34 tests passed |
+| 2026-07-26 | Phase C | 助理页切换 Agent 主路径；mode/tool trace/写确认/快捷芯片/免责声明；浏览器 fallback 三路径验收通过 |
 | | | |

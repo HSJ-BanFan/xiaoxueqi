@@ -85,7 +85,7 @@ Client
 | 系统 | — | `/api/v1/system`（或根路径，以实现为准） |
 | Agent | 复用对话表 + metadata | `/api/v1/agent`（规划中） |
 
-完整字段见仓库根 [数据库结构文档.md](../数据库结构文档.md) 与 [database.md](./database.md)。
+完整字段见 [数据库结构文档.md](./training/legacy/数据库结构文档.md) 与 [database.md](./database.md)。
 
 ## 6. 智能助理数据流（目标态）
 

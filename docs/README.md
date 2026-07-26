@@ -8,11 +8,13 @@
 | 顺序 | 文档 | 说明 |
 |:----:|------|------|
 | 1 | [architecture.md](./architecture.md) | 系统边界、分层、数据流 |
-| 2 | [agent-design.md](./agent-design.md) | Tool Calling Agent 设计（门面升级核心） |
-| 3 | [development.md](./development.md) | 本地启动、目录约定、开发流程 |
-| 4 | [api.md](./api.md) | REST / Agent API 契约 |
-| 5 | [testing.md](./testing.md) | 测试策略与用例清单 |
-| 6 | [roadmap.md](./roadmap.md) | 分阶段任务与完成定义 |
+| 2 | [agent-intelligence-plan.md](./agent-intelligence-plan.md) | **智能化完整计划**（水位 L1–L2、阶段、范围） |
+| 3 | [agent-behavior-spec.md](./agent-behavior-spec.md) | **Agent 行为规格表**（意图→tool→回复→前端验收） |
+| 4 | [agent-design.md](./agent-design.md) | Tool Calling 运行时与包结构 |
+| 5 | [development.md](./development.md) | 本地启动、目录约定、开发流程 |
+| 6 | [api.md](./api.md) | REST / Agent API 契约 |
+| 7 | [testing.md](./testing.md) | 测试策略与用例清单 |
+| 8 | [roadmap.md](./roadmap.md) | 工程分阶段任务与完成定义 |
 
 ## 专题
 
@@ -29,14 +31,13 @@
 
 ## 历史 / 实训材料（只读参考）
 
-以下文件多为小学期交付物，**不要当作当前架构真理**；实现以 `docs/*` 与代码为准。
+小学期交付物已迁入 [`training/`](./training/README.md)，**不要当作当前架构真理**；实现以本目录现行文档与代码为准。
 
 | 位置 | 内容 |
 |------|------|
-| 仓库根 `*实训*` / `任务清单.md` / `实现*.md` | 实训过程文档 |
-| `docx/` | PRD、需求分析 |
-| `糖尿病助手项目*.md` | 早期 API/优化笔记 |
-| `数据库结构文档.md` | 较完整的表结构说明（仍有效） |
-| `docs/login-*.md` | 登录问题排查历史 |
+| [training/legacy/](./training/legacy/) | 实训报告、早期 API/优化笔记、营养教学文、记忆实验方案等 |
+| [training/legacy/数据库结构文档.md](./training/legacy/数据库结构文档.md) | 较完整的表结构说明（字段级；与 ORM 冲突时以 ORM 为准） |
+| [login-issue-fix.md](./login-issue-fix.md) / [login-test-plan.md](./login-test-plan.md) | 登录排查历史 |
+| [`docx/`](../docx/) | PRD、需求分析 |
 
 升级原则：**去实训化展示、保留业务能力、补齐 Agent 与工程化**。

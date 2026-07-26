@@ -19,7 +19,7 @@ frontend/src/
     index.ts              # 主 API 客户端 + 各业务 API（现状）
     glucose.ts
     glucose-monitor.ts
-    agent.ts              # 【待建】Agent API
+    agent.ts              # Agent chat 类型与请求封装（90s timeout）
   views/
     LoginView.vue
     RegisterView.vue
@@ -34,6 +34,7 @@ frontend/src/
   utils/http.ts           # 与 api/index 重复，建议收敛
   router/index.ts
   components/
+    UserProfileCard.vue   # Dashboard 用户档案与近 7 天血糖摘要
 ```
 
 ## 3. 环境变量
@@ -70,7 +71,7 @@ Axios `baseURL` 必须使用该变量，避免写死 `localhost` 与后端 CORS 
 | mode 标签 | `Agent` / `规则模式` / `已关闭` |
 | 工具轨迹 | 可折叠列表：name、arguments 摘要、ok/error |
 | 确认卡片 | 当 `requires_confirm`：展示 preview，按钮「确认写入」 |
-| 快捷芯片 | 最近血糖；本周统计；打开记血糖表单 |
+| 快捷芯片 | 最近血糖；本周血糖统计；记录血糖引导（填入自然语言示例） |
 | 免责声明 | 页脚固定 |
 
 ### 5.3 确认写入时序
@@ -86,8 +87,15 @@ Axios `baseURL` 必须使用该变量，避免写死 `localhost` 与后端 CORS 
 
 ### 5.4 与旧 Ollama 旁路
 
-- 默认关闭「仅 Ollama 闲聊」  
-- 可放进「高级设置」；产品叙事以 Agent 为准  
+- `AssistantView` 当前不再暴露 Ollama 开关，默认且唯一产品主路径为 Agent
+- 遗留 `/ollama` API 仍保留给其他调试场景，不参与助理页交互
+
+### 5.5 当前实现说明
+
+- 页面内维护 `messages`、最多 50 条请求 `history` 与服务端 `conversation_id`
+- 新对话会重置页面消息和 `conversation_id`，不会调用旧 assistant 生成接口
+- 支持 `/assistant?prefill=...` 预填输入框；Dashboard 接线仍为可选项
+- 401 复用现有用户 store 的清 token / 跳登录逻辑；网络和 90 秒超时显示可读错误
 
 ## 6. API 模块建议
 
@@ -127,7 +135,7 @@ export interface AgentChatResponse {
 | `http.ts` 与 `api/index.ts` 双客户端 | 合并为一个，统一错误提示 |
 | baseURL 写死 | 全部改 `import.meta.env.VITE_API_URL` |
 | 调试 console.log 密码相关 | 删除 |
-| dayjs 在 Assistant 使用但 package 未必声明 | 用 `date-fns`（已有）或补依赖 |
+| Assistant 时间格式依赖 | 已改用浏览器 `Intl.DateTimeFormat`，不再依赖 dayjs |
 
 ## 8. 本地命令
 
@@ -147,3 +155,21 @@ npm run build        # 发版前
 - [ ] 记血糖未确认不落库；确认后落库  
 - [ ] 工具轨迹可见  
 - [ ] token 过期跳转登录  
+
+## 10. 健康档案与用户信息卡
+
+`SettingsView` 进入页面时必须调用 `GET /api/v1/users/profile`，不能只依赖登录响应或 localStorage 中的残缺用户对象。个人资料、健康档案、密码使用独立提交：
+
+| 区域 | profile 字段 |
+|------|--------------|
+| 个人资料 | `name`、`email`、`phone`、`birth_date`、`gender` |
+| 健康档案 | `diabetes_type`、`diagnosis_date`、`height`、`weight`、`target_glucose_min`、`target_glucose_max` |
+| 修改密码 | 仅提交 `password`，不与资料表单混合 |
+
+前端校验：身高 `50–250 cm`、体重 `20–300 kg`、目标血糖 `1–30 mmol/L`，并保证 `target_glucose_min < target_glucose_max`。保存成功后用服务端返回的完整 `User` 同步 Pinia 与 localStorage。
+
+`UserProfileCard` 挂在 Dashboard 右侧栏顶部，展示姓名/头像、糖尿病类型、目标区间、身高、体重、BMI，以及 `/api/v1/glucose/statistics?period=week` 的均值、条数和达标率。组件包含 skeleton、请求失败提示和无记录 empty 状态；操作入口分别前往：
+
+- `/settings#health-profile`：完善健康档案
+- `/glucose-record`：记录血糖
+- `/assistant?prefill=请解读我的健康档案和最近血糖概况`：请求助理解读

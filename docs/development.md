@@ -17,6 +17,7 @@ xiaoxueqi/
   backend/           # FastAPI
   frontend/          # Vue3 + Vite
   docs/              # 开发文档（本目录）
+    training/legacy/ # 历史实训长文（只读）
   docx/              # 历史 PRD/需求
   data/              # 数据集（营养等）
   .env.example       # 环境变量模板

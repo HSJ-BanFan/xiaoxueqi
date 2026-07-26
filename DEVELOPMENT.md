@@ -17,7 +17,7 @@
 
 环境变量模板：[`.env.example`](./.env.example)
 
-历史实训长文（根目录 `README.md`、各中文总结/报告）仅作参考，**实现以 `docs/*` 与代码为准**。
+历史实训长文见 [`docs/training/`](./docs/training/README.md)（已从仓库根迁入 `legacy/`），仅作参考；**实现以 `docs/*` 与代码为准**。
 
 ## 5 分钟上手
 

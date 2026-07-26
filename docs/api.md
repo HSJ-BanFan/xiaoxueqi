@@ -95,6 +95,22 @@ router.include_router(system.router, prefix="/system", tags=["系统"])
 }
 ```
 
+### 3.1 当前用户 profile
+
+`GET /api/v1/users/profile` 返回完整账户与健康档案；`PUT /api/v1/users/profile` 接受同名可更新字段并返回更新后的完整对象。前端字段必须使用 snake_case。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `name` / `email` / `phone` | string | 基础资料 |
+| `gender` | `male \| female \| other` | 可选 |
+| `birth_date` / `diagnosis_date` | datetime | 可选 |
+| `diabetes_type` | `type1 \| type2 \| gestational \| prediabetes \| other` | 可选 |
+| `height` / `weight` | number | cm / kg，可选 |
+| `target_glucose_min` / `target_glucose_max` | number | mmol/L，可选 |
+| `avatar` | string | 头像地址，可选 |
+
+资料编辑 UI 不提交 `id`、`created_at`、`updated_at`、`is_active` 或 `is_superuser`；密码更新使用独立请求体 `{ "password": "..." }`。
+
 ---
 
 ## 4. Glucose  `/api/v1/glucose`

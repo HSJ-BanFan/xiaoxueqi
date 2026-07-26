@@ -13,7 +13,7 @@ SQLAlchemy URI 由环境变量 `DATABASE_URL` 注入（见 `app/core/config.py` 
 
 历史完整说明（字段级）：
 
-- 仓库根目录：[数据库结构文档.md](../数据库结构文档.md)  
+- [数据库结构文档.md](./training/legacy/数据库结构文档.md)（实训期整理，仍可参考）  
 - SQL 脚本：`backend/diabetes_assistant.sql`、`backend/create_db.sql`  
 
 ORM 定义真相源：`backend/app/db/models.py`。  
