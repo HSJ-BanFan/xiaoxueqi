@@ -2,14 +2,15 @@ import requests
 import datetime
 import random
 import time
+import os
 
 # --- 配置 ---
 # 请在运行脚本前配置以下信息
 # 你的FastAPI应用的基础URL
-BASE_URL = "http://127.0.0.1:8000/api/v1" 
+BASE_URL = "http://127.0.0.1:8000/api/v1"
 # 用于测试的有效用户名和密码
-TEST_USERNAME = "admin@example.com"  
-TEST_PASSWORD = "admin123"      
+TEST_USERNAME = "admin@example.com"
+TEST_PASSWORD = os.getenv("TEST_PASSWORD", "")
 
 # 脚本假设你的登录端点是 /users/login (POST)
 # 如果端点不同, 请修改 LOGIN_URL
@@ -36,11 +37,11 @@ def print_test_result(response, expected_fields):
             print(f"✅ SUCCESS: Status code is 200 and expected fields {expected_fields} are present.")
         else:
             print(f"❌ FAILED: Status code was {response.status_code} or missing fields: {missing_fields}.")
-            
+
     except ValueError:
         print("❌ FAILED: Response is not valid JSON.")
         print(f"-> Response Text: {response.text}")
-        
+
     print("-" * 60)
     return success
 
@@ -67,7 +68,7 @@ def create_test_record(headers, value=None):
     print("   ...creating a sample glucose record for analysis...")
     if value is None:
         value = round(random.uniform(8.0, 15.0), 1) # 默认创建一个偏高的值来触发预警
-        
+
     payload = {
         "value": value,
         "measurement_time": random.choice(["BEFORE_BREAKFAST", "AFTER_LUNCH", "BEFORE_DINNER"]),
@@ -107,7 +108,7 @@ def test_analyze(headers):
     # 确保至少有一条记录用于分析
     create_test_record(headers, value=15.0) # 创建一个高血糖记录以触发预警
     time.sleep(1) # 等待一下，确保记录时间不同
-    
+
     payload = {"hours": 24}
     try:
         response = requests.post(f"{GLUCOSE_MONITOR_URL}/analyze", headers=headers, json=payload)
@@ -123,7 +124,7 @@ def test_analyze_trend(headers):
     for i in range(3):
         create_test_record(headers, value=random.uniform(4.0, 10.0))
         time.sleep(1) # 确保每条记录时间戳不同
-        
+
     payload = {"days": 3}
     try:
         response = requests.post(f"{GLUCOSE_MONITOR_URL}/analyze-trend", headers=headers, json=payload)
@@ -137,14 +138,14 @@ if __name__ == "__main__":
     print("="*60)
     print("This script will test if the analysis endpoints can call the LLM.")
     print("Please make sure your FastAPI server is running before proceeding.")
-    
+
     # 登录并获取Token
     token = login()
-    
+
     if token:
         # 设置认证头
         auth_headers = {"Authorization": f"Bearer {token}"}
-        
+
         # 按顺序执行测试
         print("\nStep 2: Running tests...")
         test_quick_diet_suggestions(auth_headers)
@@ -153,4 +154,4 @@ if __name__ == "__main__":
         print("\nVerification script finished.")
     else:
         print("\nCould not retrieve auth token. Aborting tests.")
-        print("Please check your server status and user credentials in the script.") 
+        print("Please check your server status and user credentials in the script.")

@@ -57,3 +57,8 @@ coverage/
 # === 大模型和向量数据库 ===
 **/ml/models/
 **/ml/vector_db/
+*.db
+*.sqlite
+*.sqlite3
+frontend/dist/
+AppData/

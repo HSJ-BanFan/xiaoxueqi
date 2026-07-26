@@ -1,95 +1,87 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
 import logging
-from typing import List
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
+
+import uvicorn
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import router as api_router
 from app.core.config import settings
-from app.ml.llm_service import llm_service
-from app.core.scheduler import glucose_scheduler
+from app.core.errors import (
+    AppError,
+    app_error_handler,
+    http_exception_handler,
+    validation_exception_handler,
+)
+from app.db import models as _models  # noqa: F401 - register ORM models
+from app.db.base_class import Base
+from app.db.session import engine
 
-# 配置日志
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 创建FastAPI应用
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    scheduler = None
+    if settings.AUTO_CREATE_TABLES:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables are ready")
+
+    if settings.SCHEDULER_ENABLED:
+        from app.core.scheduler import glucose_scheduler
+
+        scheduler = glucose_scheduler
+        scheduler.start()
+
+    try:
+        yield
+    finally:
+        if scheduler is not None:
+            scheduler.stop()
+
+
 app = FastAPI(
     title="糖尿病智能健康助理API",
-    description="基于大模型的糖尿病智能健康助理系统API",
-    version="0.1.0",
+    description="面向日常健康管理的业务 API 与工具调用智能助理",
+    version="0.2.0",
+    lifespan=lifespan,
 )
 
-# 配置CORS - 明确列出所有允许的来源，因为withCredentials要求不能使用通配符
+app.add_exception_handler(AppError, app_error_handler)
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
+cors_origins = (
+    [settings.CORS_ORIGINS]
+    if isinstance(settings.CORS_ORIGINS, str)
+    else settings.CORS_ORIGINS
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost",
-        "http://127.0.0.1",
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-        # 添加更多可能的前端源
-        "http://localhost:4173",
-        "http://127.0.0.1:4173",
-        # 如果在生产环境，添加实际的域名
-        # "https://your-production-domain.com",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],  # 允许所有方法
-    allow_headers=["*"],  # 允许所有头信息
+    allow_origins=cors_origins,
+    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+    allow_methods=["*"],
+    allow_headers=["*"],
     expose_headers=["Content-Disposition"],
-    max_age=3600,  # 预检请求的缓存时间
+    max_age=3600,
 )
 
-# 注册路由
-app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
 
 @app.get("/")
-async def root():
+def root() -> dict[str, str]:
     return {
         "message": "糖尿病智能健康助理API服务",
         "docs_url": "/docs",
-        "status": "running"
+        "status": "running",
     }
 
-@app.on_event("startup")
-async def startup_event():
-    """应用启动时执行的操作"""
-    logger.info("正在初始化应用...")
-    
-    # 禁用向量数据库初始化
-    logger.info("向量数据库初始化已禁用，以提高启动速度")
-    
-    # 禁用模型预加载
-    logger.info("模型预加载已禁用，将在首次使用时按需加载")
-    
-    # 启动血糖监测调度器
-    logger.info("正在启动血糖监测调度器...")
-    glucose_scheduler.start()
-    logger.info("血糖监测调度器已启动")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """应用关闭时执行的操作"""
-    logger.info("应用正在关闭...")
-    
-    # 停止血糖监测调度器
-    logger.info("正在停止血糖监测调度器...")
-    glucose_scheduler.stop()
-    logger.info("血糖监测调度器已停止")
 
 if __name__ == "__main__":
-    import asyncio
-    
-    async def start_app():
-        config = uvicorn.Config("main:app", host="0.0.0.0", port=8000, reload=True)
-        server = uvicorn.Server(config)
-        await server.serve()
-        
-    asyncio.run(start_app()) 
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

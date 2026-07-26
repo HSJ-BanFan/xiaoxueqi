@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from enum import Enum
 
@@ -53,8 +53,7 @@ class FoodNutrition(FoodNutritionBase):
     # created_at: datetime
     # updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FoodNutritionPage(BaseModel):
@@ -84,4 +83,4 @@ class ImageUploadResponse(BaseModel):
     file_path: str
     file_size: int
     message: str
-    status: str 
+    status: str

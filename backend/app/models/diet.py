@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from datetime import datetime
 from enum import Enum
 import json
@@ -67,10 +67,10 @@ class DietRecord(DietRecordBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-    @validator('food_items', pre=True)
+    @field_validator("food_items", mode="before")
+    @classmethod
     def parse_food_items(cls, v):
         if isinstance(v, str):
             try:
@@ -89,4 +89,4 @@ class DietStatistics(BaseModel):
     average_daily_calories: float
     average_daily_carbs: float
     most_frequent_foods: List[str]
-    period: str  # 统计周期，如"day", "week", "month" 
+    period: str  # 统计周期，如"day", "week", "month"

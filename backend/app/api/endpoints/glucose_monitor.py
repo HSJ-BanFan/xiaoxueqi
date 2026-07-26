@@ -2,9 +2,9 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 import uuid
-import numpy as np
+from statistics import fmean, pstdev
 
 from app.api.deps import get_current_user, get_db
 from app.db.models import User, GlucoseRecord
@@ -26,8 +26,7 @@ class GlucoseBase(BaseModel):
     measured_at: datetime = Field(default_factory=datetime.now)
     notes: Optional[str] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class GlucoseCreate(GlucoseBase):
     pass
@@ -84,7 +83,7 @@ def create_glucose_record(
     db_record = GlucoseRecord(
         id=str(uuid.uuid4()),
         user_id=current_user.id,
-        **record_in.dict()
+        **record_in.model_dump()
     )
     db.add(db_record)
     db.commit()
@@ -119,22 +118,22 @@ async def get_quick_diet_suggestion(
     Provides a quick diet suggestion based on the current glucose level.
     """
     meal_time_desc = "餐前" if is_before_meal else "餐后"
-    
+
     prompt = f"""
     为糖尿病患者 {current_user.name} 提供一份即时饮食建议。
-    
+
     患者信息:
     - 糖尿病类型: {getattr(current_user, 'diabetes_type', '未知')}
     - 当前血糖值: {glucose_value:.1f} mmol/L
     - 用餐情况: {meal_type.value} ({meal_time_desc})
-    
+
     请根据以上信息，生成一条简洁、具体、可操作的饮食建议。
     - 如果是餐前，请根据血糖水平推荐合适的食物类别和份量。
     - 如果是餐后，请根据血糖水平评价可能的上一餐情况，并对下一餐或零食提出调整建议。
-    
+
     建议应友好、鼓励并易于理解。
     """
-    
+
     try:
         response = await ollama_service.generate(
             prompt=prompt,
@@ -172,11 +171,11 @@ def update_glucose_record(
     db_record = db.query(GlucoseRecord).filter(GlucoseRecord.id == record_id, GlucoseRecord.user_id == current_user.id).first()
     if db_record is None:
         raise HTTPException(status_code=404, detail="Record not found")
-    
-    update_data = record_in.dict(exclude_unset=True)
+
+    update_data = record_in.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_record, key, value)
-        
+
     db.commit()
     db.refresh(db_record)
     return db_record
@@ -190,7 +189,7 @@ def delete_glucose_record(
     db_record = db.query(GlucoseRecord).filter(GlucoseRecord.id == record_id, GlucoseRecord.user_id == current_user.id).first()
     if db_record is None:
         raise HTTPException(status_code=404, detail="Record not found")
-    
+
     db.delete(db_record)
     db.commit()
 
@@ -207,26 +206,26 @@ async def analyze_glucose(
     try:
         end_date = datetime.now()
         start_date = end_date - timedelta(hours=request.hours)
-        
+
         records = get_user_glucose_records(
             db=db,
             user_id=current_user.id,
             start_date=start_date,
             end_date=end_date
         )
-        
+
         if not records:
             return {
                 "status": "ok",
                 "message": f"近{request.hours}小时内没有血糖记录",
                 "has_alerts": False
             }
-        
+
         values = [record.value for record in records]
         avg_value = sum(values) / len(values)
         max_value = max(values)
         min_value = min(values)
-        
+
         alerts = []
         low_threshold = 3.9
         if min_value < low_threshold:
@@ -235,7 +234,7 @@ async def analyze_glucose(
                 "timestamp": records[values.index(min_value)].measured_at.isoformat(),
                 "severity": "high" if min_value < 2.9 else "medium"
             })
-        
+
         high_threshold = 10.0
         if max_value > high_threshold:
             alerts.append({
@@ -243,7 +242,7 @@ async def analyze_glucose(
                 "timestamp": records[values.index(max_value)].measured_at.isoformat(),
                 "severity": "high" if max_value > 12.0 else "medium"
             })
-        
+
         alert_message = None
         if alerts:
             alert_message = await generate_alert_message(current_user, alerts, records)
@@ -257,7 +256,7 @@ async def analyze_glucose(
             "alerts": alerts, "has_alerts": len(alerts) > 0,
             "alert_message": alert_message
         }
-    
+
     except Exception as e:
         logger.error(f"分析血糖数据失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"分析血糖数据失败: {str(e)}")
@@ -275,36 +274,36 @@ async def analyze_glucose_trend(
         days = request.days if request.days else 3
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
-        
+
         records = get_user_glucose_records(db=db, user_id=current_user.id, start_date=start_date, end_date=end_date)
-        
+
         if not records or len(records) < 3:
             return {"status": "error", "message": f"近{days}天内没有足够的血糖记录", "has_data": False}
-        
+
         values = [record.value for record in records]
         avg_value = sum(values) / len(values)
         max_value = max(values)
         min_value = min(values)
-        std_value = np.std(values)
-        
+        std_value = pstdev(values)
+
         target_min, target_max = 3.9, 7.8
         in_range_count = sum(1 for v in values if target_min <= v <= target_max)
         in_range_percentage = (in_range_count / len(values)) * 100
-        
+
         high_count = sum(1 for v in values if v > target_max)
         low_count = sum(1 for v in values if v < target_min)
         high_percentage = (high_count / len(values)) * 100
         low_percentage = (low_count / len(values)) * 100
-        
+
         patterns = analyze_glucose_patterns(records)
-        
+
         statistics = {
             "average": avg_value, "max": max_value, "min": min_value, "std": std_value,
             "in_range_percentage": in_range_percentage, "high_percentage": high_percentage, "low_percentage": low_percentage
         }
-        
+
         advice = await generate_glucose_advice(current_user, records, statistics, patterns)
-        
+
         return {
             "status": "success", "has_data": True, "days": days, "record_count": len(records),
             "statistics": statistics, "patterns": patterns, "advice": advice
@@ -320,15 +319,15 @@ def analyze_glucose_patterns(records):
     records_by_date = defaultdict(list)
     for record in sorted_records:
         records_by_date[record.measured_at.date()].append(record)
-    
+
     # ... more pattern analysis logic can be added here ...
 
     fasting_values = [r.value for r in sorted_records if r.measurement_time.name.startswith("BEFORE")]
     postprandial_values = [r.value for r in sorted_records if r.measurement_time.name.startswith("AFTER")]
-    
+
     return {
-        "fasting_avg": np.mean(fasting_values) if fasting_values else 0,
-        "postprandial_avg": np.mean(postprandial_values) if postprandial_values else 0,
+        "fasting_avg": fmean(fasting_values) if fasting_values else 0,
+        "postprandial_avg": fmean(postprandial_values) if postprandial_values else 0,
     }
 
 async def generate_alert_message(user, alerts, records):
@@ -355,4 +354,4 @@ async def generate_glucose_advice(user, records, statistics, patterns):
         return response.get("response", "无法生成血糖管理建议")
     except Exception as e:
         logger.error(f"生成血糖管理建议失败: {str(e)}")
-        return "生成建议时发生错误，请稍后再试" 
+        return "生成建议时发生错误，请稍后再试"

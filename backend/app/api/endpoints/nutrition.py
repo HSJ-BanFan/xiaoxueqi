@@ -49,7 +49,7 @@ def read_foods(
     diabetes_friendly: Optional[int] = None,
     search: Optional[str] = None,
     sort_by: Optional[str] = None,
-    sort_order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
+    sort_order: Optional[str] = Query("asc", pattern="^(asc|desc)$"),
     db: Session = Depends(get_db)
 ) -> Any:
     """
@@ -370,4 +370,4 @@ def delete_image(
     food_update = FoodNutritionUpdate(image_url=None)
     update_food_nutrition(db=db, food_id=food_id, food_in=food_update)
     
-    return {"message": "食物图片已删除", "status": "success"} 
+    return {"message": "食物图片已删除", "status": "success"}

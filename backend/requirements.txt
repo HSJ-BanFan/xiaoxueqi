@@ -1,38 +1,21 @@
-# Web框架
-fastapi==0.104.1
-uvicorn==0.23.2
-python-multipart==0.0.6
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-pydantic==2.4.2
-pydantic-settings==2.0.3
-email-validator>=2.0.0
+# FastAPI runtime
+fastapi>=0.115,<1.0
+uvicorn>=0.30,<1.0
+python-multipart>=0.0.9,<1.0
+httpx>=0.25,<1.0
+requests>=2.31,<3.0
 
-# 数据库
-sqlalchemy==2.0.23
-pymysql==1.1.0
-alembic==1.12.1
-redis>=4.5.0
+# Configuration, validation, and authentication
+pydantic>=2.8,<3.0
+pydantic-settings>=2.4,<3.0
+email-validator>=2.0,<3.0
+python-jose[cryptography]>=3.3,<4.0
+passlib[bcrypt]>=1.7.4,<2.0
+bcrypt>=4.0,<4.1
 
-#AI/ML
-torch>=2.0.0
-transformers==4.26.0
-sentence-transformers==2.2.2
-huggingface_hub==0.13.3
-tokenizers==0.13.2
-scikit-learn==1.3.2
-pandas==2.1.3
-numpy==1.26.2
-matplotlib>=3.7.0
-chromadb>=0.4.0 
-ollama==0.1.6
+# Database (SQLite is the default; PyMySQL is optional for deployments)
+SQLAlchemy>=2.0,<3.0
+PyMySQL>=1.1,<2.0
 
-# 工具
-python-dotenv==1.0.0
-loguru>=0.7.0
-pytest==7.4.3
-httpx>=0.25.2
-tenacity>=8.2.0
-pillow>=10.0.0
-langchain==0.0.335
-pillow>=10.0.0 
+# Existing upload endpoints
+Pillow>=10.0,<13.0

@@ -28,75 +28,77 @@ def verify_user_credentials(email, password):
     try:
         # 查询用户
         user = db.query(User).filter(User.email == email).first()
-        
+
         if not user:
             logger.error(f"❌ 用户不存在: {email}")
             return False
-        
+
         logger.info(f"✅ 找到用户: {user.email}")
         logger.info(f"用户ID: {user.id}")
         logger.info(f"用户名: {user.name}")
         logger.info(f"是否激活: {user.is_active}")
         logger.info(f"是否管理员: {user.is_superuser}")
-        
+
         # 验证密码
         pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         password_match = pwd_context.verify(password, user.hashed_password)
-        
+
         if password_match:
             logger.info(f"✅ 密码验证成功!")
             return True
         else:
             logger.error(f"❌ 密码不匹配")
             return False
-    
+
     except Exception as e:
         logger.error(f"❌ 验证凭据时出错: {e}")
         return False
-    
+
     finally:
         db.close()
 
 def verify_login():
     """验证登录过程，模拟前端的登录请求"""
     print("开始验证登录过程...")
-    
+
     # API地址
     base_url = "http://localhost:8000"
     login_url = f"{base_url}/api/v1/users/login"
-    
+
     # 登录数据
     login_data = {
         "username": "admin@example.com",
-        "password": "admin123"
+        "password": os.getenv("TEST_PASSWORD", ""),
     }
-    
+    if not login_data["password"]:
+        raise RuntimeError("请先设置 TEST_PASSWORD 环境变量")
+
     # 将登录数据转换为表单格式
     form_data = urlencode(login_data)
-    
+
     # 发送请求
     try:
         print(f"发送POST请求到: {login_url}")
         print(f"请求数据: {login_data}")
         print(f"请求头: Content-Type: application/x-www-form-urlencoded")
-        
+
         # 使用表单格式发送请求
         response = requests.post(
-            login_url, 
+            login_url,
             data=form_data,
             headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
-        
+
         print(f"响应状态码: {response.status_code}")
-        
+
         if response.status_code == 200:
             print("登录成功!")
             response_data = response.json()
             print(f"响应数据: {json.dumps(response_data, indent=2, ensure_ascii=False)}")
-            
+
             # 获取令牌
             token = response_data.get("access_token")
-            
+
             # 测试获取用户资料
             if token:
                 print("\n使用令牌获取用户资料...")
@@ -105,9 +107,9 @@ def verify_login():
                     profile_url,
                     headers={"Authorization": f"Bearer {token}"}
                 )
-                
+
                 print(f"资料请求状态码: {profile_response.status_code}")
-                
+
                 if profile_response.status_code == 200:
                     print("获取用户资料成功!")
                     print(f"用户资料: {json.dumps(profile_response.json(), indent=2, ensure_ascii=False)}")
@@ -117,9 +119,9 @@ def verify_login():
         else:
             print(f"登录失败! 状态码: {response.status_code}")
             print(f"错误信息: {response.text}")
-            
+
     except Exception as e:
         print(f"请求失败: {str(e)}")
 
 if __name__ == "__main__":
-    verify_login() 
+    verify_login()

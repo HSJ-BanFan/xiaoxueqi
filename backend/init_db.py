@@ -22,10 +22,10 @@ def init() -> None:
     try:
         # 初始化数据库表
         init_db()
-        
+
         # 创建超级管理员
         create_admin(db)
-        
+
         logger.info("✅ 数据库初始化完成")
     finally:
         db.close()
@@ -37,10 +37,10 @@ def reset() -> None:
     try:
         # 重置数据库表
         reset_db()
-        
+
         # 创建超级管理员
         create_admin(db)
-        
+
         logger.info("✅ 数据库重置完成")
     finally:
         db.close()
@@ -49,15 +49,20 @@ def reset() -> None:
 def create_admin(db: Session) -> None:
     """创建超级管理员账户"""
     try:
+        admin_password = os.getenv("ADMIN_PASSWORD")
+        if not admin_password:
+            logger.warning("未设置 ADMIN_PASSWORD，跳过创建默认超级管理员")
+            return
+
         # 创建超级管理员
         admin = UserCreate(
-            email="admin@example.com",
+            email=os.getenv("ADMIN_EMAIL", "admin@example.com"),
             name="系统管理员",
-            password="admin123",
+            password=admin_password,
             is_active=True,
             is_superuser=True
         )
-        
+
         create_superuser(db, admin)
         logger.info("✅ 超级管理员账户创建成功")
     except Exception as e:
@@ -73,4 +78,4 @@ if __name__ == "__main__":
             logger.info("⚠️ 未知命令，使用方法: python init_db.py [reset]")
     else:
         logger.info("🚀 正在初始化数据库...")
-        init() 
+        init()

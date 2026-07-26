@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from enum import Enum
 
@@ -49,8 +49,7 @@ class Glucose(GlucoseBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GlucoseStatistics(BaseModel):
@@ -61,4 +60,4 @@ class GlucoseStatistics(BaseModel):
     in_range_percentage: float
     high_percentage: float
     low_percentage: float
-    period: str  # 统计周期，如"day", "week", "month" 
+    period: str  # 统计周期，如"day", "week", "month"
