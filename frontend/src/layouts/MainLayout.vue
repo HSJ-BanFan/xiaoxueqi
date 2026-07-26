@@ -162,7 +162,7 @@ const currentPageTitle = computed(() => {
 
 const handleCommand = (command: string) => {
   if (command === 'profile') {
-    router.push('/settings')
+    router.push({ path: '/settings', hash: '#health-profile' })
   } else if (command === 'logout') {
     ElMessageBox.confirm('确定要退出登录吗?', '提示', {
       confirmButtonText: '确定',
@@ -330,4 +330,4 @@ onUnmounted(() => {
     display: none;
   }
 }
-</style> 
+</style>

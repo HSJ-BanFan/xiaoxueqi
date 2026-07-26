@@ -512,6 +512,8 @@
       
       <!-- 右侧边栏 -->
       <el-col :xs="24" :sm="24" :md="8" :lg="6">
+        <UserProfileCard />
+
         <!-- 血糖监测卡片 -->
         <el-card class="glucose-card">
           <template #header>
@@ -692,6 +694,7 @@ import * as echarts from 'echarts'
 import { glucoseApi, healthApi, dietApi, knowledgeApi, apiClient } from '../api'
 import dayjs from 'dayjs'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import UserProfileCard from '../components/UserProfileCard.vue'
 
 const detailedAdviceContent = ref('')
 const showDetailedAdviceCard = ref(false)
@@ -3998,4 +4001,4 @@ const syncDevice = async () => {
   width: 100%;
 }
 
-</style> 
+</style>

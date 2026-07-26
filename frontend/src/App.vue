@@ -6,6 +6,7 @@
         <div class="logo">糖尿病健康助理</div>
         <div class="header-actions">
           <span class="welcome-text">欢迎，{{ userFullName }}</span>
+          <el-button text class="profile-link" @click="goToProfile">个人信息</el-button>
           <el-button type="danger" size="small" @click="handleLogout">退出登录</el-button>
         </div>
       </div>
@@ -15,11 +16,6 @@
           <component :is="Component" />
         </transition>
       </router-view>
-
-      <!-- Stagewise工具栏 (仅在开发环境中显示) -->
-      <client-only v-if="isDevelopment">
-        <stagewise-toolbar :config="stagwiseConfig" />
-      </client-only>
     </div>
   </el-config-provider>
 </template>
@@ -28,23 +24,15 @@
 import { ElConfigProvider, ElMessageBox } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { useUserStore } from './stores/user'
-import { computed, ref } from 'vue'
-import { StagewiseToolbar } from '@stagewise/toolbar-vue'
-import VuePlugin from '@stagewise-plugins/vue'
-import ClientOnly from './components/ClientOnly.vue'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
+const router = useRouter()
 const isAuthenticated = computed(() => userStore.isAuthenticated)
 const userFullName = computed(() => userStore.userFullName)
 
-// 检测是否为开发环境
-// @ts-ignore - Vite特定的环境变量
-const isDevelopment = process.env.NODE_ENV !== 'production'
-
-// Stagewise配置
-const stagwiseConfig = {
-  plugins: [VuePlugin]
-}
+const goToProfile = () => router.push({ path: '/settings', hash: '#health-profile' })
 
 const handleLogout = () => {
   ElMessageBox.confirm('确定要退出登录吗？', '提示', {
@@ -90,6 +78,14 @@ const handleLogout = () => {
   font-size: 14px;
 }
 
+.profile-link {
+  color: #ffffff;
+}
+
+.profile-link:hover {
+  color: #a0cfff;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
@@ -99,4 +95,4 @@ const handleLogout = () => {
 .fade-leave-to {
   opacity: 0;
 }
-</style> 
+</style>

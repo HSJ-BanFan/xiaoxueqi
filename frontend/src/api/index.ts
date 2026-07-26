@@ -1,8 +1,9 @@
 import axios from 'axios'
+import type { GlucoseStatistics, User, UserCreate, UserUpdate } from '../types/models'
 
 // 创建axios实例
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000',
   headers: {
     'Content-Type': 'application/json'
   },
@@ -69,16 +70,16 @@ export const userApi = {
     })
   },
   
-  register: (userData: any) => {
+  register: (userData: UserCreate | Record<string, unknown>) => {
     return apiClient.post('/api/v1/users/register', userData)
   },
   
   getProfile: () => {
-    return apiClient.get('/api/v1/users/profile')
+    return apiClient.get<User>('/api/v1/users/profile')
   },
   
-  updateProfile: (userData: any) => {
-    return apiClient.put('/api/v1/users/profile', userData)
+  updateProfile: (userData: UserUpdate) => {
+    return apiClient.put<User>('/api/v1/users/profile', userData)
   },
   
   riskAssessment: (data: any) => {
@@ -125,8 +126,8 @@ export const glucoseApi = {
     return apiClient.delete(`/api/v1/glucose/${id}`)
   },
   
-  getStatistics: (period: string) => {
-    return apiClient.get(`/api/v1/glucose/statistics?period=${period}`)
+  getStatistics: (period: 'day' | 'week' | 'month' | 'quarter' = 'week') => {
+    return apiClient.get<GlucoseStatistics>(`/api/v1/glucose/statistics?period=${period}`)
   },
   
   getRecentGlucoseRecords: (days: number = 7) => {
@@ -258,4 +259,4 @@ export default {
   assistant: assistantApi,
   knowledge: knowledgeApi,
   ollama: ollamaApi
-} 
+}

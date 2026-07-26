@@ -1,228 +1,455 @@
 <template>
   <div class="settings-container">
-    <h1>账户设置</h1>
-    
+    <div class="page-heading">
+      <div>
+        <h1>账户设置</h1>
+        <p>维护基础资料和健康档案，让助理与血糖图表使用更准确的信息。</p>
+      </div>
+    </div>
+
     <el-card class="settings-card">
       <template #header>
         <div class="card-header">
-          <span>个人资料</span>
+          <div>
+            <span>个人资料</span>
+            <small>姓名、联系方式与基础信息</small>
+          </div>
         </div>
       </template>
-      
-      <el-form :model="profileForm" :rules="profileRules" ref="profileFormRef" label-width="100px">
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="profileForm.username" placeholder="请输入用户名" />
+
+      <el-form
+        ref="personalFormRef"
+        v-loading="profileFetching"
+        :model="personalForm"
+        :rules="personalRules"
+        label-width="100px"
+        status-icon
+      >
+        <el-row :gutter="20">
+          <el-col :xs="24" :md="12">
+            <el-form-item label="姓名" prop="name">
+              <el-input v-model="personalForm.name" maxlength="100" placeholder="请输入姓名" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :xs="24" :md="12">
+            <el-form-item label="邮箱" prop="email">
+              <el-input v-model="personalForm.email" placeholder="请输入邮箱" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :xs="24" :md="12">
+            <el-form-item label="手机号码" prop="phone">
+              <el-input v-model="personalForm.phone" maxlength="20" placeholder="选填" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :xs="24" :md="12">
+            <el-form-item label="出生日期" prop="birth_date">
+              <el-date-picker
+                v-model="personalForm.birth_date"
+                type="date"
+                placeholder="选择出生日期"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                :disabled-date="disableFutureDate"
+                class="full-width"
+              />
+            </el-form-item>
+          </el-col>
+
+          <el-col :xs="24" :md="12">
+            <el-form-item label="性别" prop="gender">
+              <el-select v-model="personalForm.gender" clearable placeholder="选填" class="full-width">
+                <el-option label="男" value="male" />
+                <el-option label="女" value="female" />
+                <el-option label="其他" value="other" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item class="form-actions">
+          <el-button type="primary" :loading="personalSaving" @click="savePersonalProfile">
+            保存个人资料
+          </el-button>
         </el-form-item>
-        
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="profileForm.email" placeholder="请输入邮箱" />
+      </el-form>
+    </el-card>
+
+    <el-card id="health-profile" class="settings-card health-profile-card">
+      <template #header>
+        <div class="card-header">
+          <div>
+            <span>健康档案</span>
+            <small>用于健康管理展示，不作为医疗诊断依据</small>
+          </div>
+          <el-tag :type="healthProfileIncomplete ? 'warning' : 'success'" effect="light">
+            {{ healthProfileIncomplete ? '待完善' : '已完善' }}
+          </el-tag>
+        </div>
+      </template>
+
+      <el-alert
+        v-if="healthProfileIncomplete"
+        class="profile-tip"
+        title="完善档案后助理与图表更准"
+        description="建议至少设置糖尿病类型和目标血糖上下限。"
+        type="warning"
+        :closable="false"
+        show-icon
+      />
+
+      <el-form
+        ref="healthFormRef"
+        v-loading="profileFetching"
+        :model="healthForm"
+        :rules="healthRules"
+        label-width="120px"
+        status-icon
+      >
+        <el-row :gutter="20">
+          <el-col :xs="24" :md="12">
+            <el-form-item label="糖尿病类型" prop="diabetes_type">
+              <el-select
+                v-model="healthForm.diabetes_type"
+                clearable
+                placeholder="请选择类型"
+                class="full-width"
+              >
+                <el-option
+                  v-for="option in diabetesTypeOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+
+          <el-col :xs="24" :md="12">
+            <el-form-item label="确诊日期" prop="diagnosis_date">
+              <el-date-picker
+                v-model="healthForm.diagnosis_date"
+                type="date"
+                placeholder="选填"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                :disabled-date="disableFutureDate"
+                class="full-width"
+              />
+            </el-form-item>
+          </el-col>
+
+          <el-col :xs="24" :md="12">
+            <el-form-item label="身高" prop="height">
+              <el-input-number
+                v-model="healthForm.height"
+                :min="50"
+                :max="250"
+                :precision="1"
+                :step="0.5"
+                controls-position="right"
+                class="full-width"
+              />
+              <span class="unit-hint">cm（50–250）</span>
+            </el-form-item>
+          </el-col>
+
+          <el-col :xs="24" :md="12">
+            <el-form-item label="体重" prop="weight">
+              <el-input-number
+                v-model="healthForm.weight"
+                :min="20"
+                :max="300"
+                :precision="1"
+                :step="0.5"
+                controls-position="right"
+                class="full-width"
+              />
+              <span class="unit-hint">kg（20–300）</span>
+            </el-form-item>
+          </el-col>
+
+          <el-col :xs="24" :md="12">
+            <el-form-item label="目标血糖下限" prop="target_glucose_min">
+              <el-input-number
+                v-model="healthForm.target_glucose_min"
+                :min="1"
+                :max="30"
+                :precision="1"
+                :step="0.1"
+                controls-position="right"
+                class="full-width"
+              />
+              <span class="unit-hint">mmol/L（1–30）</span>
+            </el-form-item>
+          </el-col>
+
+          <el-col :xs="24" :md="12">
+            <el-form-item label="目标血糖上限" prop="target_glucose_max">
+              <el-input-number
+                v-model="healthForm.target_glucose_max"
+                :min="1"
+                :max="30"
+                :precision="1"
+                :step="0.1"
+                controls-position="right"
+                class="full-width"
+              />
+              <span class="unit-hint">需高于下限</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item class="form-actions">
+          <el-button type="primary" :loading="healthSaving" @click="saveHealthProfile">
+            保存健康档案
+          </el-button>
         </el-form-item>
-        
-        <el-form-item label="姓名" prop="fullName">
-          <el-input v-model="profileForm.fullName" placeholder="请输入姓名" />
-        </el-form-item>
-        
-        <el-form-item label="手机号码" prop="phone">
-          <el-input v-model="profileForm.phone" placeholder="请输入手机号码" />
-        </el-form-item>
-        
-        <el-form-item label="出生日期" prop="birthDate">
-          <el-date-picker
-            v-model="profileForm.birthDate"
-            type="date"
-            placeholder="选择出生日期"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
+      </el-form>
+    </el-card>
+
+    <el-card class="settings-card">
+      <template #header>
+        <div class="card-header">
+          <div>
+            <span>修改密码</span>
+            <small>密码更新与个人资料、健康档案分别提交</small>
+          </div>
+        </div>
+      </template>
+
+      <el-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-width="100px">
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input
+            v-model="passwordForm.newPassword"
+            type="password"
+            autocomplete="new-password"
+            placeholder="请输入新密码"
+            show-password
           />
         </el-form-item>
-        
-        <el-form-item label="性别" prop="gender">
-          <el-radio-group v-model="profileForm.gender">
-            <el-radio label="male">男</el-radio>
-            <el-radio label="female">女</el-radio>
-            <el-radio label="other">其他</el-radio>
-          </el-radio-group>
+
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input
+            v-model="passwordForm.confirmPassword"
+            type="password"
+            autocomplete="new-password"
+            placeholder="请再次输入新密码"
+            show-password
+          />
         </el-form-item>
-        
-        <el-form-item>
-          <el-button type="primary" @click="updateProfile" :loading="profileLoading">保存个人资料</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-    
-    <el-card class="settings-card">
-      <template #header>
-        <div class="card-header">
-          <span>修改密码</span>
-        </div>
-      </template>
-      
-      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-width="100px">
-        <el-form-item label="当前密码" prop="currentPassword">
-          <el-input v-model="passwordForm.currentPassword" type="password" placeholder="请输入当前密码" show-password />
-        </el-form-item>
-        
-        <el-form-item label="新密码" prop="newPassword">
-          <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码" show-password />
-        </el-form-item>
-        
-        <el-form-item label="确认新密码" prop="confirmPassword">
-          <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请再次输入新密码" show-password />
-        </el-form-item>
-        
-        <el-form-item>
-          <el-button type="primary" @click="updatePassword" :loading="passwordLoading">修改密码</el-button>
+
+        <el-form-item class="form-actions">
+          <el-button type="primary" :loading="passwordLoading" @click="updatePassword">
+            修改密码
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
-    
+
     <el-card class="settings-card">
       <template #header>
         <div class="card-header">
-          <span>通知设置</span>
+          <div>
+            <span>通知设置</span>
+            <small>本地界面偏好</small>
+          </div>
         </div>
       </template>
-      
-      <el-form :model="notificationForm" ref="notificationFormRef" label-width="100px">
+
+      <el-form :model="notificationForm" label-width="100px">
         <el-form-item label="邮件通知">
           <el-switch v-model="notificationForm.emailEnabled" />
         </el-form-item>
-        
         <el-form-item label="血糖提醒">
           <el-switch v-model="notificationForm.glucoseReminder" />
         </el-form-item>
-        
         <el-form-item label="药物提醒">
           <el-switch v-model="notificationForm.medicationReminder" />
         </el-form-item>
-        
         <el-form-item label="健康报告">
           <el-switch v-model="notificationForm.healthReport" />
         </el-form-item>
-        
-        <el-form-item>
-          <el-button type="primary" @click="updateNotificationSettings" :loading="notificationLoading">保存通知设置</el-button>
+        <el-form-item class="form-actions">
+          <el-button type="primary" :loading="notificationLoading" @click="updateNotificationSettings">
+            保存通知设置
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
-    
+
     <el-card class="settings-card danger-zone">
       <template #header>
         <div class="card-header">
-          <span>危险操作</span>
+          <span>账户操作</span>
         </div>
       </template>
-      
+
       <div class="danger-actions">
         <div class="danger-action">
           <div class="danger-info">
             <h4>退出登录</h4>
-            <p>退出当前账号的登录状态</p>
+            <p>退出当前账号的登录状态。</p>
           </div>
           <el-button type="danger" @click="handleLogout">退出登录</el-button>
         </div>
-        
+
         <div class="danger-action">
           <div class="danger-info">
             <h4>删除账户</h4>
-            <p>删除您的账户将永久删除您的所有数据，此操作无法撤销。</p>
+            <p>当前版本尚未开放账户删除接口。</p>
           </div>
-          <el-button type="danger" @click="showDeleteAccountDialog">删除账户</el-button>
+          <el-button type="danger" plain @click="showDeleteAccountNotice">删除账户</el-button>
         </div>
       </div>
     </el-card>
-    
-    <!-- 删除账户确认对话框 -->
-    <el-dialog
-      v-model="deleteAccountDialogVisible"
-      title="删除账户"
-      width="500px"
-    >
-      <div class="delete-account-warning">
-        <el-alert
-          title="此操作将永久删除您的账户和所有相关数据，无法恢复！"
-          type="error"
-          :closable="false"
-          show-icon
-        />
-      </div>
-      
-      <el-form :model="deleteAccountForm" :rules="deleteAccountRules" ref="deleteAccountFormRef" label-width="100px">
-        <el-form-item label="密码" prop="password">
-          <el-input v-model="deleteAccountForm.password" type="password" placeholder="请输入密码确认" show-password />
-        </el-form-item>
-        
-        <el-form-item label="确认" prop="confirm">
-          <el-checkbox v-model="deleteAccountForm.confirm">我确认要删除我的账户</el-checkbox>
-        </el-form-item>
-      </el-form>
-      
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="deleteAccountDialogVisible = false">取消</el-button>
-          <el-button type="danger" @click="deleteAccount" :loading="deleteAccountLoading">确认删除</el-button>
-        </div>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, onMounted } from 'vue'
+<script setup lang="ts">
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { isAxiosError } from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useRouter } from 'vue-router'
+import type { FormInstance, FormRules } from 'element-plus'
+import { useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import type { DiabetesType, Gender, User, UserUpdate, ValidationError } from '../types/models'
 
-const router = useRouter()
+interface PersonalForm {
+  name: string
+  email: string
+  phone: string
+  birth_date: string
+  gender: Gender | ''
+}
+
+interface HealthForm {
+  diabetes_type: DiabetesType | ''
+  diagnosis_date: string
+  height?: number
+  weight?: number
+  target_glucose_min?: number
+  target_glucose_max?: number
+}
+
+interface PasswordForm {
+  newPassword: string
+  confirmPassword: string
+}
+
+interface ApiErrorBody {
+  detail?: string | ValidationError[] | Record<string, unknown>
+}
+
+const route = useRoute()
 const userStore = useUserStore()
 
-// 表单引用
-const profileFormRef = ref(null)
-const passwordFormRef = ref(null)
-const notificationFormRef = ref(null)
-const deleteAccountFormRef = ref(null)
+const personalFormRef = ref<FormInstance>()
+const healthFormRef = ref<FormInstance>()
+const passwordFormRef = ref<FormInstance>()
 
-// 加载状态
-const profileLoading = ref(false)
+const profileFetching = ref(false)
+const personalSaving = ref(false)
+const healthSaving = ref(false)
 const passwordLoading = ref(false)
 const notificationLoading = ref(false)
-const deleteAccountLoading = ref(false)
+const mountedOnce = ref(false)
 
-// 个人资料表单
-const profileForm = reactive({
-  username: '',
+const personalForm = reactive<PersonalForm>({
+  name: '',
   email: '',
-  fullName: '',
   phone: '',
-  birthDate: '',
+  birth_date: '',
   gender: ''
 })
 
-// 个人资料验证规则
-const profileRules = {
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
-  ],
-  email: [
-    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-  ],
-  phone: [
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
-  ]
-}
+const healthForm = reactive<HealthForm>({
+  diabetes_type: '',
+  diagnosis_date: '',
+  height: undefined,
+  weight: undefined,
+  target_glucose_min: undefined,
+  target_glucose_max: undefined
+})
 
-// 密码表单
-const passwordForm = reactive({
-  currentPassword: '',
+const passwordForm = reactive<PasswordForm>({
   newPassword: '',
   confirmPassword: ''
 })
 
-// 验证密码一致性
-const validateConfirmPassword = (rule, value, callback) => {
-  if (value === '') {
+const notificationForm = reactive({
+  emailEnabled: true,
+  glucoseReminder: true,
+  medicationReminder: false,
+  healthReport: true
+})
+
+const diabetesTypeOptions: Array<{ value: DiabetesType; label: string }> = [
+  { value: 'type1', label: '1 型糖尿病' },
+  { value: 'type2', label: '2 型糖尿病' },
+  { value: 'gestational', label: '妊娠期糖尿病' },
+  { value: 'prediabetes', label: '糖尿病前期' },
+  { value: 'other', label: '其他' }
+]
+
+const healthProfileIncomplete = computed(
+  () =>
+    !healthForm.diabetes_type ||
+    healthForm.target_glucose_min === undefined ||
+    healthForm.target_glucose_max === undefined
+)
+
+const validatePhone = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+  if (!value || /^1[3-9]\d{9}$/.test(value) || /^[+\d][\d\s-]{5,19}$/.test(value)) {
+    callback()
+    return
+  }
+  callback(new Error('请输入正确的手机号码'))
+}
+
+const validateNumberRange = (label: string, min: number, max: number) => {
+  return (_rule: unknown, value: unknown, callback: (error?: Error) => void) => {
+    if (value === undefined || value === null || value === '') {
+      callback()
+      return
+    }
+
+    const numericValue = Number(value)
+    if (!Number.isFinite(numericValue) || numericValue < min || numericValue > max) {
+      callback(new Error(`${label}需在 ${min}–${max} 之间`))
+      return
+    }
+    callback()
+  }
+}
+
+const validateTargetRange = (_rule: unknown, _value: unknown, callback: (error?: Error) => void) => {
+  const min = healthForm.target_glucose_min
+  const max = healthForm.target_glucose_max
+
+  if (min === undefined && max === undefined) {
+    callback()
+    return
+  }
+  if (min === undefined || max === undefined) {
+    callback(new Error('请同时填写目标血糖上下限'))
+    return
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min < 1 || min > 30 || max < 1 || max > 30) {
+    callback(new Error('目标血糖需在 1–30 mmol/L 之间'))
+    return
+  }
+  if (min >= max) {
+    callback(new Error('目标血糖下限必须低于上限'))
+    return
+  }
+  callback()
+}
+
+const validateConfirmPassword = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+  if (!value) {
     callback(new Error('请再次输入新密码'))
   } else if (value !== passwordForm.newPassword) {
     callback(new Error('两次输入密码不一致'))
@@ -231,264 +458,308 @@ const validateConfirmPassword = (rule, value, callback) => {
   }
 }
 
-// 密码验证规则
-const passwordRules = {
-  currentPassword: [
-    { required: true, message: '请输入当前密码', trigger: 'blur' }
+const personalRules: FormRules = {
+  name: [
+    { required: true, message: '请输入姓名', trigger: 'blur' },
+    { min: 1, max: 100, message: '姓名长度需在 1–100 个字符之间', trigger: 'blur' }
   ],
+  email: [
+    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: ['blur', 'change'] }
+  ],
+  phone: [{ validator: validatePhone, trigger: ['blur', 'change'] }]
+}
+
+const healthRules: FormRules = {
+  height: [{ validator: validateNumberRange('身高', 50, 250), trigger: 'change' }],
+  weight: [{ validator: validateNumberRange('体重', 20, 300), trigger: 'change' }],
+  target_glucose_min: [{ validator: validateTargetRange, trigger: 'change' }],
+  target_glucose_max: [{ validator: validateTargetRange, trigger: 'change' }]
+}
+
+const passwordRules: FormRules = {
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
     { min: 6, message: '密码长度至少为 6 个字符', trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, message: '请再次输入新密码', trigger: 'blur' },
-    { validator: validateConfirmPassword, trigger: 'blur' }
+    { validator: validateConfirmPassword, trigger: ['blur', 'change'] }
   ]
 }
 
-// 通知设置表单
-const notificationForm = reactive({
-  emailEnabled: true,
-  glucoseReminder: true,
-  medicationReminder: true,
-  healthReport: true
-})
+const disableFutureDate = (date: Date) => date.getTime() > Date.now()
 
-// 删除账户对话框
-const deleteAccountDialogVisible = ref(false)
+const toDateInput = (value?: string | null) => (value ? value.slice(0, 10) : '')
+const toApiDateTime = (value: string) => (value ? `${value}T00:00:00` : undefined)
 
-// 删除账户表单
-const deleteAccountForm = reactive({
-  password: '',
-  confirm: false
-})
+const fillForms = (profile: User) => {
+  personalForm.name = profile.name || ''
+  personalForm.email = profile.email || ''
+  personalForm.phone = profile.phone || ''
+  personalForm.birth_date = toDateInput(profile.birth_date)
+  personalForm.gender = profile.gender || ''
 
-// 删除账户验证规则
-const deleteAccountRules = {
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' }
-  ],
-  confirm: [
-    { required: true, message: '请确认删除账户', trigger: 'change' },
-    { type: 'boolean', enum: [true], message: '请确认删除账户', trigger: 'change' }
-  ]
+  healthForm.diabetes_type = profile.diabetes_type || ''
+  healthForm.diagnosis_date = toDateInput(profile.diagnosis_date)
+  healthForm.height = profile.height ?? undefined
+  healthForm.weight = profile.weight ?? undefined
+  healthForm.target_glucose_min = profile.target_glucose_min ?? undefined
+  healthForm.target_glucose_max = profile.target_glucose_max ?? undefined
 }
 
-// 获取用户资料
-const fetchUserProfile = async () => {
+const validateForm = async (form?: FormInstance) => {
+  if (!form) return false
   try {
-    // 这里应该调用后端API获取用户资料
-    // const userData = await api.getUserProfile()
-    
-    // 模拟数据
-    setTimeout(() => {
-      const userData = {
-        username: 'user123',
-        email: 'user@example.com',
-        fullName: '张三',
-        phone: '13800138000',
-        birthDate: '1990-01-01',
-        gender: 'male'
-      }
-      
-      // 填充表单
-      Object.keys(profileForm).forEach(key => {
-        if (userData[key] !== undefined) {
-          profileForm[key] = userData[key]
-        }
-      })
-    }, 300)
-    
-  } catch (error) {
-    console.error('获取用户资料失败:', error)
-    ElMessage.error('获取用户资料失败')
+    await form.validate()
+    return true
+  } catch {
+    return false
   }
 }
 
-// 获取通知设置
-const fetchNotificationSettings = async () => {
-  try {
-    // 这里应该调用后端API获取通知设置
-    // const settings = await api.getNotificationSettings()
-    
-    // 模拟数据
-    setTimeout(() => {
-      const settings = {
-        emailEnabled: true,
-        glucoseReminder: true,
-        medicationReminder: false,
-        healthReport: true
-      }
-      
-      // 填充表单
-      Object.keys(notificationForm).forEach(key => {
-        if (settings[key] !== undefined) {
-          notificationForm[key] = settings[key]
-        }
+const formatApiError = (error: unknown, fallback: string) => {
+  if (!isAxiosError<ApiErrorBody>(error)) {
+    return error instanceof Error ? error.message : fallback
+  }
+
+  const detail = error.response?.data?.detail
+  if (typeof detail === 'string') return detail
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map(item => {
+        const field = item.loc?.filter(part => part !== 'body').join('.')
+        return field ? `${field}：${item.msg}` : item.msg
       })
-    }, 300)
-    
+      .filter(Boolean)
+      .join('；') || fallback
+  }
+
+  if (detail && typeof detail === 'object') {
+    return Object.entries(detail)
+      .map(([key, value]) => `${key}：${String(value)}`)
+      .join('；')
+  }
+
+  return fallback
+}
+
+const loadProfile = async () => {
+  profileFetching.value = true
+  try {
+    const profile = await userStore.fetchProfile()
+    if (!profile) throw new Error('未获取到用户资料')
+    fillForms(profile)
   } catch (error) {
-    console.error('获取通知设置失败:', error)
-    ElMessage.error('获取通知设置失败')
+    ElMessage.error(formatApiError(error, '获取用户资料失败，请稍后重试'))
+  } finally {
+    profileFetching.value = false
   }
 }
 
-// 更新个人资料
-const updateProfile = async () => {
-  if (!profileFormRef.value) return
-  
-  await profileFormRef.value.validate(async (valid) => {
-    if (valid) {
-      try {
-        profileLoading.value = true
-        
-        // 这里应该调用后端API更新个人资料
-        // await api.updateUserProfile(profileForm)
-        
-        // 模拟更新成功
-        setTimeout(() => {
-          ElMessage.success('个人资料更新成功')
-          profileLoading.value = false
-        }, 500)
-        
-      } catch (error) {
-        console.error('更新个人资料失败:', error)
-        ElMessage.error('更新个人资料失败')
-        profileLoading.value = false
-      }
-    }
-  })
+const savePersonalProfile = async () => {
+  if (!(await validateForm(personalFormRef.value))) return
+
+  const payload: UserUpdate = {
+    name: personalForm.name.trim(),
+    email: personalForm.email.trim(),
+    phone: personalForm.phone.trim()
+  }
+  if (personalForm.birth_date) payload.birth_date = toApiDateTime(personalForm.birth_date)
+  if (personalForm.gender) payload.gender = personalForm.gender
+
+  personalSaving.value = true
+  try {
+    const profile = await userStore.updateProfile(payload)
+    fillForms(profile)
+    ElMessage.success('个人资料更新成功')
+  } catch (error) {
+    ElMessage.error(formatApiError(error, '个人资料更新失败'))
+  } finally {
+    personalSaving.value = false
+  }
 }
 
-// 更新密码
+const saveHealthProfile = async () => {
+  if (!(await validateForm(healthFormRef.value))) return
+
+  const payload: UserUpdate = {}
+  if (healthForm.diabetes_type) payload.diabetes_type = healthForm.diabetes_type
+  if (healthForm.diagnosis_date) payload.diagnosis_date = toApiDateTime(healthForm.diagnosis_date)
+  if (healthForm.height !== undefined) payload.height = healthForm.height
+  if (healthForm.weight !== undefined) payload.weight = healthForm.weight
+  if (healthForm.target_glucose_min !== undefined) {
+    payload.target_glucose_min = healthForm.target_glucose_min
+  }
+  if (healthForm.target_glucose_max !== undefined) {
+    payload.target_glucose_max = healthForm.target_glucose_max
+  }
+
+  healthSaving.value = true
+  try {
+    const profile = await userStore.updateProfile(payload)
+    fillForms(profile)
+    ElMessage.success('健康档案更新成功')
+  } catch (error) {
+    ElMessage.error(formatApiError(error, '健康档案更新失败'))
+  } finally {
+    healthSaving.value = false
+  }
+}
+
 const updatePassword = async () => {
-  if (!passwordFormRef.value) return
-  
-  await passwordFormRef.value.validate(async (valid) => {
-    if (valid) {
-      try {
-        passwordLoading.value = true
-        
-        // 这里应该调用后端API更新密码
-        // await api.updatePassword(passwordForm)
-        
-        // 模拟更新成功
-        setTimeout(() => {
-          ElMessage.success('密码修改成功')
-          passwordFormRef.value.resetFields()
-          passwordLoading.value = false
-        }, 500)
-        
-      } catch (error) {
-        console.error('修改密码失败:', error)
-        ElMessage.error('修改密码失败')
-        passwordLoading.value = false
-      }
-    }
-  })
-}
+  if (!(await validateForm(passwordFormRef.value))) return
 
-// 更新通知设置
-const updateNotificationSettings = async () => {
+  passwordLoading.value = true
   try {
-    notificationLoading.value = true
-    
-    // 这里应该调用后端API更新通知设置
-    // await api.updateNotificationSettings(notificationForm)
-    
-    // 模拟更新成功
-    setTimeout(() => {
-      ElMessage.success('通知设置更新成功')
-      notificationLoading.value = false
-    }, 500)
-    
+    await userStore.updateProfile({ password: passwordForm.newPassword })
+    passwordFormRef.value?.resetFields()
+    ElMessage.success('密码修改成功')
   } catch (error) {
-    console.error('更新通知设置失败:', error)
-    ElMessage.error('更新通知设置失败')
-    notificationLoading.value = false
+    ElMessage.error(formatApiError(error, '密码修改失败'))
+  } finally {
+    passwordLoading.value = false
   }
 }
 
-// 显示删除账户对话框
-const showDeleteAccountDialog = () => {
-  deleteAccountDialogVisible.value = true
-  deleteAccountForm.password = ''
-  deleteAccountForm.confirm = false
+const updateNotificationSettings = async () => {
+  notificationLoading.value = true
+  await Promise.resolve()
+  notificationLoading.value = false
+  ElMessage.success('通知设置已保存在当前页面')
 }
 
-// 删除账户
-const deleteAccount = async () => {
-  if (!deleteAccountFormRef.value) return
-  
-  await deleteAccountFormRef.value.validate(async (valid) => {
-    if (valid) {
-      try {
-        deleteAccountLoading.value = true
-        
-        // 这里应该调用后端API删除账户
-        // await api.deleteAccount(deleteAccountForm.password)
-        
-        // 模拟删除成功
-        setTimeout(() => {
-          ElMessage.success('账户已删除')
-          userStore.logout()
-          router.push('/login')
-        }, 1000)
-        
-      } catch (error) {
-        console.error('删除账户失败:', error)
-        ElMessage.error('删除账户失败，请确认密码是否正确')
-        deleteAccountLoading.value = false
-      }
-    }
-  })
-}
-
-// 退出登录
 const handleLogout = () => {
   ElMessageBox.confirm('确定要退出登录吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    userStore.logout()
-  }).catch(() => {})
+  })
+    .then(() => userStore.logout())
+    .catch(() => undefined)
 }
 
-// 组件挂载时获取数据
-onMounted(() => {
-  fetchUserProfile()
-  fetchNotificationSettings()
+const showDeleteAccountNotice = () => {
+  ElMessage.info('当前版本尚未开放账户删除功能')
+}
+
+const scrollToHealthProfile = () => {
+  if (route.hash !== '#health-profile') return
+  void nextTick(() => {
+    document.getElementById('health-profile')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
+
+watch(
+  () => route.fullPath,
+  (_fullPath, previousFullPath) => {
+    if (mountedOnce.value && route.path === '/settings' && !previousFullPath.startsWith('/settings')) {
+      void loadProfile()
+    }
+    scrollToHealthProfile()
+  }
+)
+
+onMounted(async () => {
+  await loadProfile()
+  mountedOnce.value = true
+  scrollToHealthProfile()
 })
 </script>
 
 <style scoped>
 .settings-container {
+  max-width: 1080px;
+  margin: 0 auto;
   padding: 20px;
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.page-heading h1 {
+  margin: 0 0 8px;
+  color: #303133;
+  font-size: 28px;
+}
+
+.page-heading p {
+  margin: 0;
+  color: #909399;
+  line-height: 1.6;
 }
 
 .settings-card {
   margin-bottom: 20px;
+  scroll-margin-top: 20px;
+}
+
+.health-profile-card {
+  border-top: 3px solid #409eff;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-weight: 600;
+}
+
+.card-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-header small {
+  color: #909399;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.profile-tip {
+  margin-bottom: 22px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.unit-hint {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.form-actions {
+  margin-top: 4px;
+  margin-bottom: 0;
 }
 
 .danger-zone {
-  border: 1px solid #f56c6c;
-}
-
-.danger-zone .el-card__header {
-  background-color: #fef0f0;
+  border: 1px solid #fbc4c4;
 }
 
 .danger-actions {
-  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .danger-action {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 0;
   border-bottom: 1px solid #ebeef5;
 }
 
@@ -503,11 +774,36 @@ onMounted(() => {
 
 .danger-info p {
   margin: 0;
-  font-size: 14px;
   color: #606266;
+  font-size: 14px;
 }
 
-.delete-account-warning {
-  margin-bottom: 20px;
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 12px;
+  }
+
+  .page-heading h1 {
+    font-size: 24px;
+  }
+
+  :deep(.el-form-item) {
+    display: block;
+  }
+
+  :deep(.el-form-item__label) {
+    width: auto !important;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+
+  :deep(.el-form-item__content) {
+    margin-left: 0 !important;
+  }
+
+  .danger-action {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
-</style> 
+</style>

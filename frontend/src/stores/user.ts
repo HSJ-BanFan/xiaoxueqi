@@ -1,171 +1,137 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import axios from 'axios'
 import router from '../router'
 import { ElMessage } from 'element-plus'
-import { userApi, apiClient } from '../api'
+import { apiClient, userApi } from '../api'
+import type { User, UserCreate, UserUpdate } from '../types/models'
 
-// 内置测试账号
-const BUILT_IN_ACCOUNTS = [
-  {
-    username: 'test@example.com',
-    password: 'test123',
-    userData: {
-      id: 1,
-      username: 'test',
-      email: 'test@example.com',
-      name: '测试用户',
-      is_active: true,
-      is_admin: true
-    }
+type StoredUser = Partial<User>
+
+const readStoredUser = (): StoredUser => {
+  const raw = localStorage.getItem('user')
+  if (!raw) return {}
+
+  try {
+    return JSON.parse(raw) as StoredUser
+  } catch {
+    localStorage.removeItem('user')
+    return {}
   }
-]
+}
 
 export const useUserStore = defineStore('user', () => {
-  // 状态
   const token = ref(localStorage.getItem('token') || '')
-  const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'))
-  const useLocalAuth = ref(false) // 恢复为false，始终使用后端API
-  
-  // 计算属性
-  const isAuthenticated = computed(() => {
-    // 检查token和user.id是否都存在
-    return !!token.value && !!user.value.id
-  })
-  const userFullName = computed(() => user.value?.name || '用户')
-  
-  // 方法
+  const user = ref<StoredUser>(readStoredUser())
+  const useLocalAuth = ref(false)
+
+  const isAuthenticated = computed(() => Boolean(token.value && user.value.id))
+  const userFullName = computed(
+    () => user.value.name || user.value.full_name || user.value.email?.split('@')[0] || '用户'
+  )
+
+  const persistUser = (profile: StoredUser) => {
+    user.value = profile
+    localStorage.setItem('user', JSON.stringify(profile))
+  }
+
+  /**
+   * 读取服务端完整 profile。登录响应只保证 id/email，因此页面进入时必须走这里。
+   */
+  async function fetchProfile(): Promise<User | null> {
+    if (!token.value) return null
+
+    const response = await userApi.getProfile()
+    const profile = response.data
+    if (!profile?.id) {
+      throw new Error('用户资料响应缺少 id')
+    }
+
+    persistUser(profile)
+    return profile
+  }
+
+  // 保留旧调用名，所有调用都走完整 profile 请求。
+  const fetchUserProfile = fetchProfile
+  const getUserInfo = fetchProfile
+
   async function login(email: string, password: string) {
     try {
-      // 添加内置账号支持（仅用于开发和测试）
-      if (useLocalAuth.value && (
-          (email === 'admin@example.com' && password === 'admin') ||
-          (email === 'test@example.com' && password === 'test123')
-      )) {
-        // 使用内置账号登录
+      if (
+        useLocalAuth.value &&
+        ((email === 'admin@example.com' && password === 'admin') ||
+          (email === 'test@example.com' && password === 'test123'))
+      ) {
         const mockToken = `mock_token_${Date.now()}`
         token.value = mockToken
         localStorage.setItem('token', mockToken)
-        
-        const userData = email === 'admin@example.com' ? {
-          id: 'admin-id',
-          email: 'admin@example.com',
-          name: '系统管理员',
-          is_active: true,
-          is_superuser: true
-        } : {
-          id: 'test-id',
-          email: 'test@example.com',
-          name: '测试用户',
-          is_active: true,
-          is_superuser: false
-        }
-        
-        user.value = userData
-        localStorage.setItem('user', JSON.stringify(userData))
-        
-        console.log('登录成功，用户信息:', userData)
+
+        const mockUser: StoredUser =
+          email === 'admin@example.com'
+            ? {
+                id: 'admin-id',
+                email,
+                name: '系统管理员',
+                is_active: true,
+                is_superuser: true
+              }
+            : {
+                id: 'test-id',
+                email,
+                name: '测试用户',
+                is_active: true,
+                is_superuser: false
+              }
+
+        persistUser(mockUser)
         ElMessage.success('登录成功')
-        
-        // 如果有重定向，则导航到重定向页面
-        const redirectPath = router.currentRoute.value.query.redirect as string
-        router.push(redirectPath || '/dashboard')
-        
+        await router.push((router.currentRoute.value.query.redirect as string) || '/dashboard')
         return true
       }
-      
-      // 如果不是内置账号或本地认证禁用，尝试调用后端API登录
+
       const response = await userApi.login(email, password)
-      
-      const data = response.data
+      const data = response.data as { access_token?: string; user_id?: string; id?: string; email?: string; name?: string }
+      const userId = data.user_id || data.id
+      if (!data.access_token || !userId) {
+        throw new Error('登录响应缺少必要信息')
+      }
+
       token.value = data.access_token
       localStorage.setItem('token', data.access_token)
-      
-      // 存储用户基本信息
-      const userId = data.user_id || data.id
       localStorage.setItem('user_id', userId)
-      localStorage.setItem('email', email)
-      
-      // 直接构造用户对象并保存，确保有id字段
-      const userObj = {
+      localStorage.setItem('email', data.email || email)
+
+      // 先写入最小对象，避免守卫在 profile 请求期间丢失登录态。
+      persistUser({
         id: userId,
-        email: email,
-        name: data.name || '用户' + email.split('@')[0],
+        email: data.email || email,
+        name: data.name || `用户${email.split('@')[0]}`,
         is_active: true
+      })
+
+      // profile 失败时仍保留可用的最小登录态；Settings/Dashboard 会再次重试。
+      try {
+        await fetchProfile()
+      } catch {
+        // 网络暂时不可用不应抹掉刚刚建立的登录态。
       }
-      
-      user.value = userObj
-      localStorage.setItem('user', JSON.stringify(userObj))
-      
-      console.log('登录成功，用户信息:', userObj)
+
       ElMessage.success('登录成功')
-      
-      // 如果有重定向，则导航到重定向页面
-      const redirectPath = router.currentRoute.value.query.redirect as string
-      router.push(redirectPath || '/dashboard')
-      
+      await router.push((router.currentRoute.value.query.redirect as string) || '/dashboard')
       return true
     } catch (error: any) {
-      console.error('登录失败:', error)
-      ElMessage.error(error.response?.data?.detail || '登录失败：用户名或密码错误')
+      ElMessage.error(error.response?.data?.detail || error.message || '登录失败：用户名或密码错误')
       return false
     }
   }
-  
-  async function register(userData: any) {
-    try {
-      if (useLocalAuth.value) {
-        // 本地模拟注册成功
-        ElMessage.success('注册成功，请登录')
-        router.push('/login')
-        return true
-      }
-      
-      await userApi.register(userData)
-      ElMessage.success('注册成功，请登录')
-      router.push('/login')
-      return true
-    } catch (error: any) {
-      ElMessage.error(error.response?.data?.detail || '注册失败')
-      return false
-    }
+
+  async function register(userData: UserCreate | Record<string, unknown>) {
+    await userApi.register(userData)
+    ElMessage.success('注册成功，请登录')
+    await router.push('/login')
+    return true
   }
-  
-  async function fetchUserProfile() {
-    try {
-      // 如果没有token，直接返回
-      if (!token.value) {
-        return null
-      }
-      
-      // 使用登录时返回的基本信息，不立即请求详细资料
-      const basicUserInfo = {
-        id: user.value.id || localStorage.getItem('user_id'),
-        email: user.value.email || localStorage.getItem('email'),
-        name: user.value.name || '用户' + (localStorage.getItem('email') || '').split('@')[0],
-        is_active: true
-      }
-      
-      // 确保有用户ID
-      if (!basicUserInfo.id) {
-        // 如果没有用户ID，清除token并返回null
-        token.value = ''
-        user.value = {}
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        return null
-      }
-      
-      user.value = basicUserInfo
-      localStorage.setItem('user', JSON.stringify(basicUserInfo))
-      
-      return user.value
-    } catch (error) {
-      console.error('获取用户信息失败', error)
-      return null
-    }
-  }
-  
+
   function logout() {
     token.value = ''
     user.value = {}
@@ -173,70 +139,58 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('user')
     localStorage.removeItem('user_id')
     localStorage.removeItem('email')
-    router.push('/login')
+    void router.push('/login')
     ElMessage.success('已退出登录')
   }
-  
-  async function updateProfile(userData: any) {
-    try {
-      if (useLocalAuth.value) {
-        // 本地模拟更新成功
-        user.value = { ...user.value, ...userData }
-        localStorage.setItem('user', JSON.stringify(user.value))
-        ElMessage.success('个人信息更新成功（本地模式）')
-        return true
-      }
-      
-      const response = await userApi.updateProfile(userData)
-      
-      user.value = { ...user.value, ...response.data }
-      localStorage.setItem('user', JSON.stringify(user.value))
-      ElMessage.success('个人信息更新成功')
-      return true
-    } catch (error: any) {
-      ElMessage.error(error.response?.data?.detail || '更新失败')
-      return false
+
+  async function updateProfile(userData: UserUpdate): Promise<User> {
+    if (useLocalAuth.value) {
+      const safeProfileUpdates = { ...userData }
+      delete safeProfileUpdates.password
+      const nextUser = { ...user.value, ...safeProfileUpdates } as User
+      persistUser(nextUser)
+      return nextUser
     }
+
+    const response = await userApi.updateProfile(userData)
+    const profile = response.data
+    persistUser(profile)
+    return profile
   }
-  
-  // 切换认证模式
+
   function toggleAuthMode(useLocal: boolean) {
     useLocalAuth.value = useLocal
     return useLocalAuth.value
   }
-  
-  // 初始化函数，确保用户数据一致性
+
   function initialize() {
-    // 如果有token但没有完整的用户信息，尝试获取
-    if (token.value && (!user.value || !user.value.id)) {
-      fetchUserProfile()
+    // 无论 localStorage 中是否有残缺对象，只要存在 token 就刷新一次完整 profile。
+    if (token.value) {
+      void fetchProfile().catch(() => undefined)
     }
   }
-  
-  // 设置全局axios默认值
-  axios.defaults.baseURL = 'http://localhost:8000'
+
+  // 兼容少量仍直接使用 axios 的旧页面，同时保持统一鉴权头。
+  axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
   axios.interceptors.request.use(config => {
     if (token.value) {
       config.headers.Authorization = `Bearer ${token.value}`
     }
     return config
   })
-  
-  // 自动初始化
-  initialize()
-  
-  // 为apiClient设置拦截器
+
   apiClient.interceptors.response.use(
     response => response,
     error => {
       if (error.response?.status === 401) {
-        console.error('认证失败，自动登出', error)
         logout()
       }
       return Promise.reject(error)
     }
   )
-  
+
+  initialize()
+
   return {
     token,
     user,
@@ -245,10 +199,12 @@ export const useUserStore = defineStore('user', () => {
     useLocalAuth,
     login,
     register,
+    fetchProfile,
     fetchUserProfile,
+    getUserInfo,
     logout,
     updateProfile,
     toggleAuthMode,
     initialize
   }
-}) 
+})

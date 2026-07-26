@@ -3,22 +3,53 @@
  * 确保前端和后端使用一致的数据结构
  */
 
-// 用户相关模型
+// 用户与健康档案模型（与 backend/app/models/user.py 对齐）
+export type Gender = 'male' | 'female' | 'other'
+
+export type DiabetesType =
+  | 'type1'
+  | 'type2'
+  | 'gestational'
+  | 'prediabetes'
+  | 'other'
+
 export interface User {
-  id: string;
-  email: string;
-  username: string;
-  full_name: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  id: string
+  email: string
+  name: string
+  gender?: Gender | null
+  birth_date?: string | null
+  diabetes_type?: DiabetesType | null
+  diagnosis_date?: string | null
+  height?: number | null
+  weight?: number | null
+  phone?: string | null
+  avatar?: string | null
+  target_glucose_min?: number | null
+  target_glucose_max?: number | null
+  is_active?: boolean
+  is_superuser?: boolean
+  created_at?: string
+  updated_at?: string
+
+  // 旧页面仍可能读取这些别名；新 profile API 不使用它们。
+  username?: string
+  full_name?: string
 }
 
 export interface UserCreate {
-  email: string;
-  username: string;
-  password: string;
-  full_name?: string;
+  email: string
+  name?: string
+  password: string
+  gender?: Gender
+  birth_date?: string
+  diabetes_type?: DiabetesType
+  diagnosis_date?: string
+  height?: number
+  weight?: number
+  phone?: string
+  username?: string
+  full_name?: string
 }
 
 export interface UserLogin {
@@ -27,9 +58,21 @@ export interface UserLogin {
 }
 
 export interface UserUpdate {
-  email?: string;
-  full_name?: string;
-  password?: string;
+  email?: string
+  name?: string
+  password?: string
+  gender?: Gender
+  birth_date?: string
+  diabetes_type?: DiabetesType
+  diagnosis_date?: string
+  height?: number
+  weight?: number
+  phone?: string
+  avatar?: string
+  target_glucose_min?: number
+  target_glucose_max?: number
+  is_active?: boolean
+  is_superuser?: boolean
 }
 
 export interface TokenResponse {
@@ -88,16 +131,19 @@ export interface GlucoseUpdate {
 
 export interface GlucoseStatistics {
   average: number;
-  max_value: number;
-  min_value: number;
+  max: number;
+  min: number;
   count: number;
-  high_count: number;
-  low_count: number;
   in_range_percentage: number;
   high_percentage: number;
   low_percentage: number;
-  std_deviation: number;
   period: string;
+  // 兼容仍读取旧统计字段名的页面。
+  max_value?: number;
+  min_value?: number;
+  high_count?: number;
+  low_count?: number;
+  std_deviation?: number;
 }
 
 export interface GlucoseAnalysis {
@@ -270,11 +316,11 @@ export interface PaginatedResponse<T> {
 
 // 错误响应接口
 export interface ValidationError {
-  loc: string[];
+  loc: Array<string | number>;
   msg: string;
   type: string;
 }
 
 export interface ErrorResponse {
-  detail: string | ValidationError[] | Record<string, any>;
-} 
+  detail: string | ValidationError[] | Record<string, unknown>;
+}
