@@ -67,11 +67,11 @@ def verify_login():
 
     # 登录数据
     login_data = {
-        "username": "admin@example.com",
-        "password": os.getenv("TEST_PASSWORD", ""),
+        "username": os.getenv("TEST_USER_EMAIL", "user@local.test"),
+        "password": os.getenv("TEST_USER_PASSWORD", ""),
     }
     if not login_data["password"]:
-        raise RuntimeError("请先设置 TEST_PASSWORD 环境变量")
+        raise RuntimeError("请先设置 TEST_USER_PASSWORD 环境变量")
 
     # 将登录数据转换为表单格式
     form_data = urlencode(login_data)
@@ -79,7 +79,7 @@ def verify_login():
     # 发送请求
     try:
         print(f"发送POST请求到: {login_url}")
-        print(f"请求数据: {login_data}")
+        print(f"请求账号: {login_data['username']}，密码已隐藏")
         print(f"请求头: Content-Type: application/x-www-form-urlencoded")
 
         # 使用表单格式发送请求

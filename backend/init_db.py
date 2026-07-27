@@ -56,7 +56,7 @@ def create_admin(db: Session) -> None:
 
         # 创建超级管理员
         admin = UserCreate(
-            email=os.getenv("ADMIN_EMAIL", "admin@example.com"),
+            email=os.getenv("ADMIN_EMAIL", "admin@local.test"),
             name="系统管理员",
             password=admin_password,
             is_active=True,

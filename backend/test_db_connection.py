@@ -25,13 +25,18 @@ def test_db_connection():
 def check_admin_user(db):
     """检查管理员用户是否存在"""
     try:
+        admin_email = os.getenv("ADMIN_EMAIL")
+        if not admin_email:
+            logger.info("未设置 ADMIN_EMAIL，跳过管理员账户检查")
+            return None
+
         admin = db.query(User).filter(
-            User.email == "admin@diabetes-assistant.com", 
+            User.email == admin_email,
             User.is_superuser == True
         ).first()
         
         if admin:
-            logger.info(f"✅ 管理员用户存在: {admin.name} ({admin.email})")
+            logger.info("✅ 已配置的管理员用户存在")
             return True
         else:
             logger.warning("⚠️ 管理员用户不存在")
@@ -40,19 +45,15 @@ def check_admin_user(db):
         logger.error(f"❌ 查询管理员用户失败: {e}")
         return False
 
-def list_all_users(db):
-    """列出所有用户"""
+def count_users(db):
+    """统计用户数量，不输出账号或个人资料"""
     try:
-        users = db.query(User).all()
-        logger.info(f"✅ 系统中共有 {len(users)} 个用户:")
-        
-        for i, user in enumerate(users, 1):
-            logger.info(f"  {i}. {user.name} ({user.email}) {'[管理员]' if user.is_superuser else ''}")
-        
-        return users
+        count = db.query(User).count()
+        logger.info(f"✅ 系统中共有 {count} 个用户")
+        return count
     except SQLAlchemyError as e:
         logger.error(f"❌ 查询用户列表失败: {e}")
-        return []
+        return 0
 
 if __name__ == "__main__":
     logger.info("🔍 开始测试数据库连接...")
@@ -61,8 +62,8 @@ if __name__ == "__main__":
     if db:
         try:
             check_admin_user(db)
-            list_all_users(db)
+            count_users(db)
         finally:
             db.close()
     
-    logger.info("✅ 测试完成") 
+    logger.info("✅ 测试完成")

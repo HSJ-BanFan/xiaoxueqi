@@ -175,7 +175,7 @@ Agent 升级后：会话 CRUD 可继续用；**生成回复主路径改为 Agent
 
 ---
 
-## 7. Agent（规划 / 实现中） `/api/v1/agent`
+## 7. Agent `/api/v1/agent`
 
 ### 7.1 `POST /chat`
 
@@ -207,7 +207,7 @@ Agent 升级后：会话 CRUD 可继续用；**生成回复主路径改为 Agent
   "reply": "近7天均值 6.8 mmol/L ...\n\n说明：...",
   "conversation_id": "uuid",
   "mode": "agent",
-  "model": "gemini/gemini-3.6-flash",
+  "model": "configured-tool-capable-model",
   "rounds": 2,
   "tool_calls": [
     { "name": "get_glucose_stats", "arguments": { "period": "week" } }

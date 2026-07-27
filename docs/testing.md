@@ -14,21 +14,22 @@ backend/tests/
   test_health.py
   test_auth.py
   test_glucose_authz.py
-  test_glucose_stats.py
-  test_agent_fallback.py
   test_agent_tools.py
-  test_agent_runtime_mock_llm.py
+  test_agent_runtime.py
+  test_agent_api.py
+  test_llm_client.py
 ```
 
 遗留脚本（`test_login_api.py` 等）可保留作手工冒烟，**新逻辑以 pytest 为准**。
 
 ## 3. 依赖
 
-`requirements-dev.txt`（建议新建）：
+`requirements-dev.txt`：
 
 ```text
-pytest>=7.4
-httpx>=0.25
+-r requirements.txt
+pytest
+pytest-cov
 ```
 
 运行：
@@ -36,13 +37,11 @@ httpx>=0.25
 ```bash
 cd backend
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt
-$env:DATABASE_URL = "sqlite:///./test_diabetes.db"
-$env:SECRET_KEY = "test-secret-key"
-$env:AGENT_ENABLED = "true"
-$env:AGENT_REQUIRE_CONFIRM_WRITE = "true"
-pytest -q
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
 ```
+
+`tests/conftest.py` 会覆盖为内存 SQLite 和不可达的假 LLM 地址，因此无需创建或提交测试数据库文件。
 
 ## 4. conftest 要点
 

@@ -6,7 +6,7 @@ import os
 
 def create_admin_user():
     """创建管理员用户"""
-    admin_email = os.getenv("ADMIN_EMAIL", "admin@example.com")
+    admin_email = os.getenv("ADMIN_EMAIL", "admin@local.test")
     admin_password = os.getenv("ADMIN_PASSWORD")
     if not admin_password:
         raise RuntimeError("请先设置 ADMIN_PASSWORD 环境变量")

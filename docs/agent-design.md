@@ -1,19 +1,19 @@
 # Agent 设计说明
 
-> 状态：设计冻结（实现中）  
+> 状态：Agent MVP 已实现并有自动化测试
 > 原则：**模型只提议；权限、校验、写库由 Python 确定性执行**  
 > 智能化计划与水位：[agent-intelligence-plan.md](./agent-intelligence-plan.md)  
 > **行为验收（意图级）**：[agent-behavior-spec.md](./agent-behavior-spec.md)
 
 ## 1. 为什么做 Agent
 
-当前助理多为「拼 prompt + Ollama 闲聊」，无法稳定：
+早期助理主要是「拼 prompt + Ollama 闲聊」，无法稳定：
 
 - 读取用户真实血糖/档案  
 - 受控写入记录  
 - 在 LLM 宕机时仍可完成基础管理  
 
-升级后的 Agent 要成为**真智能助理**：会查数、会算统计、会预警解释、写操作可确认可审计。
+当前 Agent 已能查数、计算统计、解释确定性预警，并通过确认门禁执行受控写入。
 
 ## 2. 技术选型
 
@@ -26,11 +26,11 @@
 
 当前后端：
 
-- OpenAI-compatible proxy：`LLM_BASE_URL=http://localhost:18318/v1`
-- 模型：`gemini/gemini-3.6-flash`
-- Agent 产品链路不启动或加载本地 LLM；其他兼容服务可通过环境变量切换
+- 通过 `LLM_BASE_URL`、`LLM_API_KEY` 与 `LLM_MODEL` 接入 OpenAI-compatible 服务
+- Agent 产品链路不启动或加载本地 LLM
+- 模型服务不可用时自动进入规则 fallback
 
-## 3. 包结构（目标）
+## 3. 包结构
 
 ```text
 backend/app/agent/
@@ -40,10 +40,9 @@ backend/app/agent/
   llm_client.py        # OpenAICompatibleClient
   tools.py             # HealthToolRegistry + dispatch
   runtime.py           # tool loop + fallback
-  audit.py             # 可选：结构化日志 helper
 ```
 
-当前仓库仅有 `__init__.py` 占位，实现时按上表补齐。
+以上核心模块均已实现；审计信息随 conversation message metadata 持久化。
 
 ## 4. 运行时状态机
 

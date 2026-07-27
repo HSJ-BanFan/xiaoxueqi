@@ -24,7 +24,7 @@
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
 │  │ REST API     │  │ Agent API    │  │ System            │  │
 │  │ /users       │  │ /agent/chat  │  │ /healthz /readyz  │  │
-│  │ /glucose ... │  │ (planned)    │  │                   │  │
+│  │ /glucose ... │  │ Tool Calling │  │                   │  │
 │  └──────┬───────┘  └──────┬───────┘  └───────────────────┘  │
 │         │                 │                                 │
 │         ▼                 ▼                                 │
@@ -83,11 +83,11 @@ Client
 | 营养 | 食物数据相关 | `/api/v1/nutrition` |
 | 监测 | 调度 + mock 设备 | `/api/v1/glucose-monitor` |
 | 系统 | — | `/api/v1/system`（或根路径，以实现为准） |
-| Agent | 复用对话表 + metadata | `/api/v1/agent`（规划中） |
+| Agent | 复用对话表 + metadata | `/api/v1/agent` |
 
 完整字段见 [数据库结构文档.md](./training/legacy/数据库结构文档.md) 与 [database.md](./database.md)。
 
-## 6. 智能助理数据流（目标态）
+## 6. 智能助理数据流
 
 ```text
 POST /api/v1/agent/chat
@@ -125,24 +125,20 @@ frontend/src/
 | API | `uvicorn` :8000 | `backend/main.py` |
 | DB | SQLite 文件 | `DATABASE_URL` 可切 MySQL |
 | 前端 | Vite :5173 | `VITE_API_URL` 指向 API |
-| LLM | 可选 | 当前默认 OpenAI-compatible proxy `localhost:18318/v1`；Ollama 仅遗留调试 |
+| LLM | 可选 | 通过 `LLM_BASE_URL` 接入任意 OpenAI-compatible 服务；不可用时进入 fallback |
 | Scheduler | 进程内 | reload 可能双启，开发可关 |
 
-## 9. 当前仓库状态（文档编写时）
+## 9. 当前仓库状态
 
-已有/部分落地：
+已落地：
 
-- 业务 REST、JWT、Vue 页面  
-- `app/core/config.py` 已偏向 SQLite + LLM/Agent 配置项  
-- `app/core/errors.py`、`endpoints/system.py` 健康检查草稿  
-- `app/agent/` 包占位（`runtime` 等仍待实现）  
+- 业务 REST、JWT、用户级数据隔离与 Vue 页面
+- `app/agent/` Tool Calling runtime、严格工具 Schema、写确认门禁与 fallback
+- `POST /api/v1/agent/chat`、对话持久化和工具审计 metadata
+- pytest 自动化测试与 GitHub Actions 质量门禁
+- 作品化 README、数据库文件排除和公开凭据清理
 
-未完成（见 roadmap）：
-
-- Agent runtime / tools / API  
-- pytest 体系  
-- 前端 Agent UX  
-- README 作品化、Docker  
+后续增强见 roadmap，主要包括容器化、正式演示截图和更多业务工具。
 
 ## 10. 相关文档
 

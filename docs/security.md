@@ -26,11 +26,11 @@
 
 检查清单：
 
-- [ ] 列表查询带 `user_id == current_user.id`  
-- [ ] 按主键读取后校验属主，失败 403 或 404（推荐 404 防枚举，或统一 403）  
-- [ ] 创建时 body.user_id 不一致 → 403，或服务端强制覆盖  
+- [x] 列表查询带 `user_id == current_user.id`
+- [x] 按主键读取后校验属主，失败 403 或 404
+- [x] 创建时 body.user_id 不一致 → 403，或服务端强制覆盖
 - [ ] 管理员接口单独 `is_superuser`  
-- [ ] Agent tools 不接受任意 user_id  
+- [x] Agent tools 不接受任意 user_id
 
 相关测试见 [testing.md](./testing.md) G1–G4。
 
@@ -80,8 +80,9 @@
 
 ## 8. 安全自检（发布前）
 
-- [ ] `.env` 未进库  
-- [ ] 默认管理员密码已改  
+- [x] `.env` 未进库
+- [x] 无固定默认管理员密码
+- [x] SQLite / Chroma 数据库文件未被 Git 跟踪
 - [ ] Swagger 生产是否需关闭或加保护  
-- [ ] 越权测试通过  
-- [ ] 无破解软件/盗版教程残留在公开 README  
+- [x] 越权测试通过
+- [x] 无破解软件/盗版教程残留在公开 README

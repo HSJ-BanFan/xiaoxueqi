@@ -3,8 +3,13 @@
  * 提供常用的表单验证规则
  */
 
-// 验证规则类型
-type ValidateRule = (rule: any, value: any, callback: (error?: Error) => void) => void
+// 兼容 async-validator 的 rule/value/callback/source 调用签名。
+type ValidateRule = (
+  rule: any,
+  value: any,
+  callback: (error?: Error) => void,
+  source?: Record<string, unknown>
+) => void
 
 /**
  * 必填字段验证
@@ -135,7 +140,7 @@ export const confirmPassword = (passwordField: string, message: string = '两次
       return
     }
     
-    if (value !== source[passwordField]) {
+    if (value !== source?.[passwordField]) {
       callback(new Error(message))
     } else {
       callback()
@@ -252,4 +257,4 @@ export default {
   createFormRules,
   glucoseFormRules,
   registerFormRules
-} 
+}

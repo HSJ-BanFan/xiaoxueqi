@@ -145,19 +145,20 @@ def create_admin_user(db):
     try:
         from app.db.models import User
 
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@local.test")
         admin_password = os.getenv("ADMIN_PASSWORD")
         if not admin_password:
             logger.warning("未设置 ADMIN_PASSWORD，跳过创建超级管理员")
             return None
 
         # 检查用户是否已存在
-        existing_user = get_user_by_email(db, email="admin@example.com")
+        existing_user = get_user_by_email(db, email=admin_email)
         if existing_user:
             logger.info(f"超级管理员账户已存在: {existing_user.email}")
             return existing_user
 
         admin = UserCreate(
-            email="admin@example.com",
+            email=admin_email,
             name="系统管理员",
             password=admin_password,
             is_active=True,
@@ -177,19 +178,20 @@ def create_test_user(db):
     try:
         from app.services.user import create_user
 
+        test_email = os.getenv("TEST_USER_EMAIL", "user@local.test")
         test_password = os.getenv("TEST_USER_PASSWORD")
         if not test_password:
             logger.warning("未设置 TEST_USER_PASSWORD，跳过创建测试用户")
             return None
 
         # 检查用户是否已存在
-        existing_user = get_user_by_email(db, email="test@example.com")
+        existing_user = get_user_by_email(db, email=test_email)
         if existing_user:
             logger.info(f"测试用户账户已存在: {existing_user.email}")
             return existing_user
 
         test_user = UserCreate(
-            email="test@example.com",
+            email=test_email,
             name="测试用户",
             password=test_password,
             is_active=True

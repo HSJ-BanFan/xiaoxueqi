@@ -2,6 +2,10 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 
+interface ApiErrorPayload {
+  detail?: unknown
+}
+
 // 错误消息配置
 const ERROR_MESSAGES = {
   network: '网络连接错误，请检查您的网络连接',
@@ -15,7 +19,7 @@ const ERROR_MESSAGES = {
 
 // 创建axios实例
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000',
   headers: {
     'Content-Type': 'application/json'
   },
@@ -78,7 +82,7 @@ const parseValidationError = (detail: any): string => {
  * @param error Axios错误对象
  * @returns 格式化的错误信息
  */
-const handleApiError = (error: AxiosError): string => {
+const handleApiError = (error: AxiosError<ApiErrorPayload>): string => {
   if (!error.response) {
     // 网络错误
     if (error.message.includes('Network Error')) {
@@ -127,7 +131,7 @@ const handleApiError = (error: AxiosError): string => {
       return ERROR_MESSAGES.serverError
     
     default:
-      return `请求失败(${status}): ${data?.detail || ERROR_MESSAGES.default}`
+      return `请求失败(${status}): ${data?.detail ? parseValidationError(data.detail) : ERROR_MESSAGES.default}`
   }
 }
 
@@ -192,4 +196,4 @@ export const http = {
   }
 }
 
-export default http 
+export default http

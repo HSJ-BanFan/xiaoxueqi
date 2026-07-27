@@ -55,14 +55,6 @@
           还没有账号? <router-link to="/register">立即注册</router-link>
         </div>
 
-        <div class="test-account-tip">
-          <el-button text type="primary" @click="fillAdminAccount">
-            填入管理员账号
-          </el-button>
-          <el-button text type="primary" @click="fillTestAccount">
-            填入测试账号
-          </el-button>
-        </div>
       </el-form>
     </div>
   </div>
@@ -100,7 +92,6 @@ const loginForm = ref()
 
 onMounted(() => {
   // 如果用户已登录，直接跳转到首页或重定向页面
-  console.log('登录页面加载，认证状态:', userStore.isAuthenticated)
   if (userStore.isAuthenticated) {
     const redirectPath = route.query.redirect as string
     router.push(redirectPath || '/dashboard')
@@ -114,15 +105,11 @@ const handleLogin = async () => {
     if (valid) {
       loading.value = true
       try {
-        console.log('尝试登录:', loginData.email)
         const success = await userStore.login(loginData.email, loginData.password)
         if (!success) {
           ElMessage.error('登录失败，请检查您的邮箱和密码')
-        } else {
-          console.log('登录成功，用户信息:', userStore.user)
         }
-      } catch (error) {
-        console.error('登录失败', error)
+      } catch {
         ElMessage.error('登录失败，请检查您的邮箱和密码')
       } finally {
         loading.value = false
@@ -134,17 +121,6 @@ const handleLogin = async () => {
   })
 }
 
-// 填入管理员账号
-const fillAdminAccount = () => {
-  loginData.email = 'admin@example.com'
-  loginData.password = 'admin123'
-}
-
-// 填入测试账号
-const fillTestAccount = () => {
-  loginData.email = 'test@example.com'
-  loginData.password = 'test123'
-}
 </script>
 
 <style scoped>
@@ -292,15 +268,4 @@ const fillTestAccount = () => {
   text-decoration: underline;
 }
 
-.test-account-tip {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-/* Remove Element Plus default alert */
-.test-account-alert {
-  display: none;
-}
-</style> 
+</style>

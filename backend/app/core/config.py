@@ -58,11 +58,11 @@ class Settings(BaseSettings):
         os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "vector_db"),
     )
 
-    # LLM / Agent (OpenAI-compatible proxy supplied by the local environment).
+    # LLM / Agent. The local default is OpenAI-compatible and can be overridden.
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "openai_compatible")
-    LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "http://localhost:18318/v1")
+    LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "http://127.0.0.1:11434/v1")
     LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini/gemini-3.6-flash")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen2.5:7b")
     LLM_TIMEOUT_SECONDS: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
     LLM_MAX_TOOL_ROUNDS: int = int(os.getenv("LLM_MAX_TOOL_ROUNDS", "4"))
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
 
     # Legacy fields kept for older modules
     MODEL_PROVIDER: str = os.getenv("MODEL_PROVIDER", "disabled")
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "gemini/gemini-3.6-flash")
+    MODEL_NAME: str = os.getenv("MODEL_NAME", "qwen2.5:7b")
     MODEL_DEVICE: str = os.getenv("MODEL_DEVICE", "cpu")
     MODEL_PATH: str = os.getenv("MODEL_PATH", "./models")
     MODEL_QUANTIZATION: str = os.getenv("MODEL_QUANTIZATION", "int4")

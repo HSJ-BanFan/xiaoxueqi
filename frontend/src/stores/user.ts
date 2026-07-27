@@ -23,7 +23,6 @@ const readStoredUser = (): StoredUser => {
 export const useUserStore = defineStore('user', () => {
   const token = ref(localStorage.getItem('token') || '')
   const user = ref<StoredUser>(readStoredUser())
-  const useLocalAuth = ref(false)
 
   const isAuthenticated = computed(() => Boolean(token.value && user.value.id))
   const userFullName = computed(
@@ -57,38 +56,6 @@ export const useUserStore = defineStore('user', () => {
 
   async function login(email: string, password: string) {
     try {
-      if (
-        useLocalAuth.value &&
-        ((email === 'admin@example.com' && password === 'admin') ||
-          (email === 'test@example.com' && password === 'test123'))
-      ) {
-        const mockToken = `mock_token_${Date.now()}`
-        token.value = mockToken
-        localStorage.setItem('token', mockToken)
-
-        const mockUser: StoredUser =
-          email === 'admin@example.com'
-            ? {
-                id: 'admin-id',
-                email,
-                name: '系统管理员',
-                is_active: true,
-                is_superuser: true
-              }
-            : {
-                id: 'test-id',
-                email,
-                name: '测试用户',
-                is_active: true,
-                is_superuser: false
-              }
-
-        persistUser(mockUser)
-        ElMessage.success('登录成功')
-        await router.push((router.currentRoute.value.query.redirect as string) || '/dashboard')
-        return true
-      }
-
       const response = await userApi.login(email, password)
       const data = response.data as { access_token?: string; user_id?: string; id?: string; email?: string; name?: string }
       const userId = data.user_id || data.id
@@ -144,23 +111,10 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function updateProfile(userData: UserUpdate): Promise<User> {
-    if (useLocalAuth.value) {
-      const safeProfileUpdates = { ...userData }
-      delete safeProfileUpdates.password
-      const nextUser = { ...user.value, ...safeProfileUpdates } as User
-      persistUser(nextUser)
-      return nextUser
-    }
-
     const response = await userApi.updateProfile(userData)
     const profile = response.data
     persistUser(profile)
     return profile
-  }
-
-  function toggleAuthMode(useLocal: boolean) {
-    useLocalAuth.value = useLocal
-    return useLocalAuth.value
   }
 
   function initialize() {
@@ -196,7 +150,6 @@ export const useUserStore = defineStore('user', () => {
     user,
     isAuthenticated,
     userFullName,
-    useLocalAuth,
     login,
     register,
     fetchProfile,
@@ -204,7 +157,6 @@ export const useUserStore = defineStore('user', () => {
     getUserInfo,
     logout,
     updateProfile,
-    toggleAuthMode,
     initialize
   }
 })

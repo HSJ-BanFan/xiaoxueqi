@@ -64,12 +64,10 @@ ORM 定义真相源：`backend/app/db/models.py`。
 
 ```bash
 cd backend
-# 视脚本支持情况：
-python setup_dev.py --init-db
-python setup_dev.py --sample-data
-# 或
-python init_db.py
+python setup_dev.py --init-db --use-orm
 ```
+
+默认配置的 `AUTO_CREATE_TABLES=true` 也会在 API 启动时自动创建表。只有显式设置 `ADMIN_PASSWORD` 或 `TEST_USER_PASSWORD` 时，初始化脚本才会创建对应的本地演示账号。
 
 MySQL：
 
@@ -92,5 +90,6 @@ CREATE DATABASE diabetes_assistant
 
 ## 8. 测试库
 
-- 使用独立文件 `test_*.db` 或 memory SQLite  
-- 禁止 pytest 指向开发用 `diabetes_assistant.db` 除非只读  
+- 自动化测试使用 memory SQLite，不读取开发数据库。
+- `*.db`、`*.sqlite`、`*.sqlite3` 均被 Git 忽略，仓库不提交数据库快照。
+- 示例数据必须由初始化脚本生成，不得从真实账号、会话或健康记录复制。

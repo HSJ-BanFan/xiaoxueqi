@@ -58,11 +58,6 @@ export const userApi = {
     formData.append('username', email)
     formData.append('password', password)
     
-    // 添加调试日志
-    console.log('登录请求数据:', { username: email, password: '***' })
-    console.log('登录请求URL:', '/api/v1/users/login')
-    console.log('登录请求头:', { 'Content-Type': 'application/x-www-form-urlencoded' })
-    
     return apiClient.post('/api/v1/users/login', formData, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'

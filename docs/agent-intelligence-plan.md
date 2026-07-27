@@ -126,9 +126,9 @@ Vue AssistantView
 ### 4.5 P0 完成定义（DoD）
 
 - [ ] §7 演示 9 步全过  
-- [ ] 断 LLM 仍可统计/预览记血糖  
-- [ ] pytest P0 矩阵绿  
-- [ ] 简历可写：Tool Calling、写门禁、审计、Fallback（不写虚假 QPS）  
+- [x] 断 LLM 仍可统计/预览记血糖
+- [x] pytest P0 矩阵绿
+- [x] 简历可写：Tool Calling、写门禁、审计、Fallback（不写虚假 QPS）
 
 ---
 
@@ -181,28 +181,28 @@ Agent **不替代** REST：
 
 ### Phase B1 — Tools + Fallback（可无 LLM 演示）
 
-- [ ] 实现 tools.py 六工具  
-- [ ] runtime fallback 正则 I10–I12  
-- [ ] tool 单测 T1–T6  
-- [ ] 本地脚本 curl 验证 fallback  
+- [x] 实现 tools.py 六工具
+- [x] runtime fallback 正则 I10–I12
+- [x] tool 单测 T1–T6
+- [x] 本地脚本验证 fallback
 
 ### Phase B2 — LLM Tool Loop
 
-- [ ] llm_client + prompts  
-- [ ] runtime agent loop  
-- [ ] mock LLM 测试  
-- [ ] mode=agent 路径  
+- [x] llm_client + prompts
+- [x] runtime agent loop
+- [x] mock LLM 测试
+- [x] mode=agent 路径
 
 ### Phase B3 — API + 落库审计
 
-- [ ] endpoints/agent.py  
-- [ ] conversation/message metadata  
-- [ ] API 测试 C1–C3  
+- [x] endpoints/agent.py
+- [x] conversation/message metadata
+- [x] API 测试 C1–C3
 
 ### Phase C — 前端
 
-- [ ] agent API 模块  
-- [ ] 轨迹 / 确认 / mode / 芯片  
+- [x] agent API 模块
+- [x] 轨迹 / 确认 / mode / 芯片
 - [ ] 与血糖页数据刷新  
 
 ### Phase C+ — P1（可选）

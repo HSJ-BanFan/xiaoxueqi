@@ -33,7 +33,7 @@
 | requirements 拆分 | 已完成 |
 | pytest 骨架 | 已完成（34 tests） |
 | 去硬编码密钥/CORS `[IP]` | 已完成 |
-| README 作品化 | Phase D（本次不做） |
+| README 作品化 | 已完成 |
 
 ### 任务 Checklist
 
@@ -43,7 +43,7 @@
 - [x] `.gitignore`：`.env`、`*.db`、`.venv`、`node_modules`  
 - [x] `requirements.txt` 瘦身；`requirements-dev.txt`  
 - [x] `tests/conftest.py` + H1/A1–A5/G1–G5  
-- [ ] 删除或隔离 README 中破解/超长装机内容（挪到 `docs/training/` 可选）  
+- [x] 删除 README 中破解、占位资源和超长装机内容
 
 ### 完成定义
 
@@ -100,7 +100,9 @@
 ## Phase D — 打磨与门面（1 天）
 
 - [ ] Docker Compose（api ± mysql）  
-- [ ] README 作品页 + 架构图  
+- [x] README 作品页 + 架构图
+- [x] GitHub Actions：后端测试 + 前端构建
+- [x] 数据库文件停止跟踪，移除公开默认凭据
 - [ ] 演示录屏/截图  
 - [ ] 简历 bullet 定稿  
 - [ ] 面试 10 问自答（见 agent-design + security）  
@@ -137,4 +139,5 @@
 | 2026-07-26 | 开发文档体系 | docs/* 与 .env.example |
 | 2026-07-26 | Phase A + Phase B | SQLite/Uvicorn 验收通过；Gemini Agent proxy + fallback；34 tests passed |
 | 2026-07-26 | Phase C | 助理页切换 Agent 主路径；mode/tool trace/写确认/快捷芯片/免责声明；浏览器 fallback 三路径验收通过 |
+| 2026-07-26 | Phase D 门面清理 | README 重构、身份说明、数据库排除、凭据清理、CI |
 | | | |

@@ -35,7 +35,7 @@ python check_users.py
 数据库中共有 1 个用户:
 {
   "id": "admin-id",
-  "email": "admin@example.com",
+  "email": "admin@local.test",
   "name": "系统管理员",
   "is_active": true,
   "is_superuser": true,
@@ -56,14 +56,14 @@ python test_login_api.py
 ```
 开始测试登录API...
 发送POST请求到: http://localhost:8000/api/v1/users/login
-请求数据: {'username': 'admin@example.com', 'password': 'admin123'}
+请求数据: {'username': 'admin@local.test', 'password': '<redacted>'}
 响应状态码: 200
 登录成功!
 响应数据: {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "bearer",
   "user_id": "admin-id",
-  "email": "admin@example.com"
+  "email": "admin@local.test"
 }
 ```
 
@@ -80,7 +80,7 @@ python verify_login.py
 ```
 开始验证登录过程...
 发送POST请求到: http://localhost:8000/api/v1/users/login
-请求数据: {'username': 'admin@example.com', 'password': 'admin123'}
+请求数据: {'username': 'admin@local.test', 'password': '<redacted>'}
 请求头: Content-Type: application/x-www-form-urlencoded
 响应状态码: 200
 登录成功!
@@ -88,14 +88,14 @@ python verify_login.py
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "bearer",
   "user_id": "admin-id",
-  "email": "admin@example.com"
+  "email": "admin@local.test"
 }
 
 使用令牌获取用户资料...
 资料请求状态码: 200
 获取用户资料成功!
 用户资料: {
-  "email": "admin@example.com",
+  "email": "admin@local.test",
   "name": "系统管理员",
   "is_active": true,
   "phone": null,
@@ -109,15 +109,15 @@ python verify_login.py
 
 ### 5. 检查前端请求
 
-创建了 `test-login.js` 脚本，用于在浏览器控制台中测试前端登录请求：
+如需在浏览器控制台手工测试，可临时运行以下片段；不要把真实凭据保存到仓库：
 
 ```javascript
 // 前端登录测试脚本
 async function testLogin() {
   console.log('开始测试登录...');
   
-  const email = 'admin@example.com';
-  const password = 'admin123';
+  const email = 'admin@local.test';
+  const password = '<ADMIN_PASSWORD>';
   
   // 创建表单数据
   const formData = new URLSearchParams();
@@ -196,4 +196,4 @@ async function testLogin() {
 
 - [FastAPI OAuth2 with Password Flow](https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/)
 - [CORS with credentials](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials)
-- [URLSearchParams API](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams) 
+- [URLSearchParams API](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)

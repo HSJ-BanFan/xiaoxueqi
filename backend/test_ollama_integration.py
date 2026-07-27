@@ -7,14 +7,14 @@ from typing import Dict, Any
 # 配置
 BASE_URL = "http://localhost:8000/api/v1"
 TEST_USER = {
-    "email": os.getenv("TEST_EMAIL", "admin@example.com"),
-    "password": os.getenv("TEST_PASSWORD", ""),
+    "email": os.getenv("TEST_USER_EMAIL", "user@local.test"),
+    "password": os.getenv("TEST_USER_PASSWORD", ""),
 }
 
 def login() -> str:
     """登录并获取访问令牌"""
     if not TEST_USER["password"]:
-        print("请先设置 TEST_PASSWORD 环境变量")
+        print("请先设置 TEST_USER_PASSWORD 环境变量")
         return ""
     response = requests.post(
         f"{BASE_URL}/users/login",

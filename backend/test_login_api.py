@@ -24,11 +24,11 @@ def test_login_api():
 
     # 登录数据
     login_data = {
-        "username": "admin@example.com",
-        "password": os.getenv("TEST_PASSWORD", ""),
+        "username": os.getenv("TEST_USER_EMAIL", "user@local.test"),
+        "password": os.getenv("TEST_USER_PASSWORD", ""),
     }
     if not login_data["password"]:
-        raise RuntimeError("请先设置 TEST_PASSWORD 环境变量")
+        raise RuntimeError("请先设置 TEST_USER_PASSWORD 环境变量")
 
     # 将登录数据转换为表单格式
     form_data = {
@@ -39,7 +39,7 @@ def test_login_api():
     # 发送请求
     try:
         print(f"发送POST请求到: {url}")
-        print(f"请求数据: {form_data}")
+        print(f"请求账号: {form_data['username']}，密码已隐藏")
 
         # 使用表单格式发送请求
         response = requests.post(
