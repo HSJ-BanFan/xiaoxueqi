@@ -1,6 +1,6 @@
 # RAG 知识检索增强设计
 
-> 状态：已评审待实现
+> 状态：核心链路与完整语料已实现；人工许可复核待完成
 > 日期：2026-07-28
 > 落地目标：`docs/agent-behavior-spec.md` 的 I24（知识问答）与 `docs/agent-intelligence-plan.md` P1 第 5 项「知识库 tool」
 > 相关文档：[agent-design.md](../../agent-design.md)、[agent-behavior-spec.md](../../agent-behavior-spec.md)、[architecture.md](../../architecture.md)、[testing.md](../../testing.md)
@@ -49,7 +49,7 @@
    白名单 URL → 抽正文 → LLM 中文改写 → 切片 → (可选) 算 embedding
         └→ data/knowledge/corpus.jsonl
            data/knowledge/corpus.meta.json
-           data/knowledge/LICENSES.md          ← 三者均提交进 Git
+           data/knowledge/LICENSES.md          ← 三项产物均提交进 Git
 
 [部署时·非 CI]  backend/scripts/seed_knowledge.py   幂等 upsert
         └→ knowledge_base (文档级) + knowledge_chunks (片段级)
@@ -76,14 +76,13 @@
 | source_key | 站点 | 选择理由 |
 |---|---|---|
 | `niddk` | National Institute of Diabetes and Digestive and Kidney Diseases（NIH） | 糖尿病自我管理科普覆盖最系统 |
-| `cdc` | CDC Diabetes | 公共卫生视角，生活方式与并发症预防 |
 | `medlineplus` | MedlinePlus（NLM） | 主题页结构规整，适合切片 |
 
-三者均为美国联邦政府机构出版物，正文通常属公共领域。
+最终白名单为 NIDDK 38 篇、MedlinePlus 22 篇，共 60 个唯一 URL。CDC 曾作为候选来源，但主站在构建环境返回 403，官方 Media Library 的 Usage Guidelines 又明确禁止 syndicated content 再分发，因此本轮不纳入版本化语料。完整核对见 [`docs/research/2026-07-28-rag-corpus-source-review.md`](../../research/2026-07-28-rag-corpus-source-review.md)。
 
 ### 4.2 许可处理（必做）
 
-**本设计撰写时开发环境无法访问外网，未能在线核对上述站点的许可条款原文。** 因此不在本文档中写死许可结论，改为把许可核实做成管道的强制环节：
+已在线核对 NIDDK 与 MedlinePlus 的官方内容使用声明，并把许可核实保留为管道强制环节：
 
 1. `ingest_knowledge.py` 抓取每个页面时，一并抓取该站点的 copyright / content-usage 声明，连同 `retrieved_at` 写入 `data/knowledge/LICENSES.md`，并把逐文档的 `license` 字段写进 corpus。
 2. **首次运行摄取脚本后，必须人工复核 `LICENSES.md`**，确认每个来源确为公共领域或允许再分发；任何存疑来源从 `sources.py` 白名单中移除后重跑。
@@ -97,7 +96,7 @@
 
 糖尿病类型与诊断 / 糖尿病前期 / 血糖自我监测 / 目标范围与 A1C / 低血糖识别与处理 / 高血糖与酮症 / 碳水化合物与饮食规划 / 运动与活动 / 体重管理 / 足部护理 / 眼部并发症 / 肾脏并发症 / 神经病变 / 心血管风险 / 用药依从性（不含具体剂量） / 生病日管理 / 旅行 / 妊娠糖尿病 / 戒烟 / 心理健康与糖尿病倦怠。
 
-脚本尊重目标站 `robots.txt`，请求间隔不低于 1 秒，带可识别的 User-Agent。
+脚本尊重目标站 `robots.txt`，按 `max(本地 1 秒下限, robots crawl-delay)` 节流并带可识别的 User-Agent；NIDDK 当前实际间隔为 10 秒。
 
 ## 5. 数据模型
 
@@ -107,7 +106,7 @@
 
 | 列 | 类型 | 用途 |
 |---|---|---|
-| `source_key` | String(32) | `niddk` / `cdc` / `medlineplus`，支持按源过滤与按源重跑 |
+| `source_key` | String(32) | 当前语料为 `niddk` / `medlineplus`，支持按源过滤与按源重跑 |
 | `source_url` | String(512) | 引用链接，前端可点 |
 | `title_en` | String(255) | 英文原标题 |
 | `license` | String(255) | 抓取时从源站记录的许可声明 |
@@ -149,17 +148,19 @@
 **先切片、后改写**，顺序是刻意的：在英文正文上切好边界再逐片改写，`text_zh` 与 `text_en` 天然一一对齐；若先整篇改写再切分，两种语言的切分边界无法对齐，`text_en` 就失去核对价值。
 
 - **fetch**：按 `sources.py` 白名单抓取，记录 `retrieved_at` 与站点许可声明。
-- **extract**：每个源一个 extractor，HTML → 正文纯文本，剥离导航、页脚、相关链接。
-- **chunk**：在英文正文上按标题层级优先切分，目标 800–1200 英文字符（改写后约 400–600 汉字），重叠约 150 英文字符。
+- **extract**：每个源一个 extractor，HTML → 正文纯文本。NIDDK 从真实 `h1` 开始，剥离面包屑、目录、脚注、References、Clinical Trials 与研究尾部；MedlinePlus 只取许可明确覆盖的 `#topic-summary`。
+- **chunk**：在英文正文上按句子和单词边界切分，目标 800–1100 英文字符，重叠约 150 英文字符。
 - **rewrite**：对每个英文 chunk 调用项目既有的 OpenAI-compatible 客户端做英译中改写，产出对应 `text_zh`。Prompt 硬约束：
   1. 只做语言转换与压缩，禁止新增任何原文没有的事实；
   2. 数字、单位、阈值、百分比原样保留；
   3. 禁止产出诊断结论、处方或剂量建议；
   4. 保持科普语气，不使用第一人称。
+- **rewrite fallback**：默认仍使用项目 OpenAI-compatible 客户端；构建环境无可用端点时可显式传 `--rewrite-provider google`。fallback 会缓存逐段结果、轮换地区入口、保护数字表达，并拒绝包含连续未翻译英文句子的结果。
+- **quality gates**：全部 chunk 逐条校验数字一致性、中文完整性、字符数和来源字段；默认只有 40–60 篇、300–500 chunks 且 0 失败时才覆盖现有产物，调试部分输出必须显式传 `--allow-partial`。
 - **embed**（可选）：`EMBEDDING_ENABLED=true` 时对每个 chunk 的 `text_zh` 调 `/v1/embeddings` 预计算向量。
 - **emit**：写出三个产物。文档级 `content` 为该文档全部 `text_zh` 按序拼接。
 
-命令行开关：`--only <source_key>` / `--no-rewrite` / `--no-embed` / `--dry-run` / `--limit <n>`。
+命令行开关：`--only <source_key>` / `--url <allowlisted-url>` / `--rewrite-provider <llm|google>` / `--no-rewrite` / `--no-embed` / `--dry-run` / `--allow-partial` / `--limit <n>`。
 
 ### 6.2 产物
 
@@ -169,7 +170,7 @@
 | `data/knowledge/corpus.meta.json` | 源清单、文档数、chunk 数、生成时间、改写模型名、embedding 模型名 |
 | `data/knowledge/LICENSES.md` | 逐源许可声明与抓取时间，供人工复核 |
 
-三者均提交进 Git。预计体积几百 KB。
+三项产物均提交进 Git。当前 `corpus.jsonl` 约 1.3 MB。
 
 ### 6.3 `backend/scripts/seed_knowledge.py`
 
@@ -211,6 +212,8 @@ class KnowledgeRetriever:
 字符 bigram + ASCII 词的混合切分，不引入 jieba。`低血糖怎么办` → `低血 / 血糖 / 糖怎 / 怎么 / 么办`。
 
 取舍说明：jieba 分词质量更好，但需要一个带词典的额外依赖；bigram 零依赖、召回略糙，对几百条 chunk 的语料足够，且「血糖」「胰岛素」「并发症」这类关键术语能稳定命中。
+
+完整语料验收后补充一层小型确定性同义词扩展（如「运动」→「身体活动 / 体力活动 / 健康生活」、「A1C」→「糖化血红蛋白」），并把文档标题 token 以 4 倍频次加入对应 chunk 的 BM25 词频。该层不调用模型、不改变原始 query 的向量检索输入。
 
 ### 7.2 BM25
 
@@ -335,31 +338,34 @@ class _SearchKnowledgeArgs(_StrictArgs):
 |---|---|
 | `tests/test_knowledge_retrieval.py`（新） | BM25 打分与排序正确性；bigram 切分；RRF 融合；空语料；`source_key` 过滤；embedder mock 抛异常时退回 BM25 且 `degraded=true` |
 | `tests/test_agent_tools.py`（扩充） | `search_knowledge` 参数校验（额外字段被拒、`limit` 边界）；citations 结构完整；空库返回 `count=0` |
-| `tests/test_agent_runtime.py`（扩充） | mock LLM 返回 `search_knowledge` tool_call → citations 进入 `tool_results`；fallback 知识路由命中；**回归断言：写意图优先级不被知识路由抢占** |
+| `tests/test_agent_runtime.py`（扩充） | mock LLM 返回 `search_knowledge` tool_call → citations 进入 `tool_results`；未检索、空检索、缺失/越界引用和错误工具耗尽轮次时强制降级；**回归断言：写意图优先级不被知识路由抢占** |
 | `tests/test_knowledge_api.py`（新） | 新 search 端点鉴权、参数校验、分数非恒定 |
 | `tests/fixtures/knowledge_sample.jsonl`（新） | 约 10 条小语料 fixture |
+| `tests/test_ingest_knowledge.py`（新） | 60 个唯一白名单 URL；HTML 范围过滤；句子/单词边界切片；数字保护与修复；中文完整性；robots crawl-delay |
 
 CI 配置不变，`ingest_knowledge.py` 永不进 CI。
 
 ## 13. 验收标准
 
 - [ ] `LICENSES.md` 经人工复核，每个保留来源确认为公共领域或允许再分发
-- [ ] `corpus.jsonl` 提交进仓库，文档数 40–60、chunk 数 300–500
-- [ ] 全新 clone 执行 `seed_knowledge.py` 后，知识问答可用
-- [ ] 未配置 LLM 与 embedding 端点时，规则模式仍能回答「低血糖怎么办」并给出来源链接
-- [ ] Agent 模式下回复带 `[1][2]` 角标，`tool_results` 中 citations 的 `source_url` 可点开原文
-- [ ] 抽查 10 条 chunk，`text_zh` 中的数字、单位、阈值与 `text_en` 完全一致
-- [ ] `python -m pytest -q` 全绿，且不产生任何网络请求
-- [ ] `npm run build` 通过
-- [ ] `docs/api.md`、`docs/architecture.md`、`docs/agent-design.md`、`docs/agent-behavior-spec.md`（I24 勾选）、`README.md` 同步更新
+- [x] `corpus.jsonl` 提交进仓库，文档数 60、chunk 数 429
+- [x] 全新 clone 执行 `seed_knowledge.py` 后，知识问答可用
+- [x] 未配置 LLM 与 embedding 端点时，规则模式仍能回答「低血糖怎么办」并给出来源链接
+- [x] Agent 模式下回复带 `[1][2]` 角标，`tool_results` 中 citations 的 `source_url` 可点开原文
+- [x] 全量 429 条 chunk 自动校验数字、阈值与百分比一致，并抽查中文完整性
+- [x] `python -m pytest -q` 全绿，且不产生任何网络请求
+- [x] `npm run build` 通过
+- [x] `docs/api.md`、`docs/architecture.md`、`docs/agent-design.md`、`docs/agent-behavior-spec.md`（I24 勾选）、`README.md` 同步更新
+
+当前仓库提交 60 篇、429 chunks 的完整双语语料：NIDDK 38 篇/344 chunks，MedlinePlus 22 篇/85 chunks。`corpus.meta.json` 状态为 `complete_unreviewed`，自动质量门禁已完成，但 `license_reviewed=false` 与 `LICENSES.md` 的“人工复核：待完成”必须保持真实，不将自动核对冒充维护者许可签字。
 
 ## 14. 风险
 
 | 风险 | 缓解 |
 |---|---|
-| LLM 改写篡改数字或阈值 | `text_en` 同行保留，可当场核对；验收含 10 条抽查；改写 prompt 硬约束数字原样保留 |
+| 翻译改写篡改数字或阈值 | `text_en` 同行保留；数字表达先保护再恢复；429 条全量自动一致性校验；中文完整性门禁拒绝残留英文句子 |
 | 源站许可与预期不符 | 许可随抓取落盘 + 交付前人工复核；存疑来源移出白名单重跑 |
-| bigram 分词召回不足 | 语料规模小，可人工评估；不足时降级手段是补同义词扩展，而非改分词器 |
+| bigram 分词召回不足 | 已加入小型确定性同义词扩展和标题加权；继续以离线查询集评估，不引入运行时分词模型 |
 | 模型该检索时不检索 | system prompt 硬规则 + fallback 关键词路由兜底 |
 | 知识路由破坏既有写入行为 | 路由置于写/统计/查询分支之后，并加回归断言 |
 | 源站改版导致 URL 失效 | 语料已提交，运行时不依赖源站；重跑时脚本报告失效 URL |
@@ -411,3 +417,5 @@ docs/agent-behavior-spec.md docs/agent-intelligence-plan.md README.md
 | 日期 | 变更 |
 |---|---|
 | 2026-07-28 | 初版：数据源与许可策略、双语语料管道、BM25+可选向量混合检索、search_knowledge 工具、前端来源引用 |
+| 2026-07-28 | 第一阶段实现：核心 RAG/Agent/REST/前端/测试落地；提交启动语料，保留完整语料与许可复核门禁 |
+| 2026-07-28 | 完整语料：排除 CDC syndication；提交 NIDDK/MedlinePlus 60 篇、429 chunks；加入 robots、正文范围、翻译完整性和防部分覆盖门禁 |

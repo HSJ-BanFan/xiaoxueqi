@@ -22,7 +22,7 @@
 | OpenAI-compatible Tool Calling + 自研 loop | **采用（核心）** |
 | LangChain / LangGraph | 不作为核心依赖（可选适配，二期） |
 | Claude Agent / Claude Code SDK | **不采用**（偏开发者代理，不适合作产品后端 runtime） |
-| 纯 RAG 闲聊 | 不够；RAG 仅作后续 `search_knowledge` tool |
+| 纯 RAG 闲聊 | 不够；RAG 作为已落地的 `search_knowledge` tool，由 Agent 按需调用 |
 
 当前后端：
 
@@ -70,7 +70,7 @@ backend/app/agent/
    rounds > MAX? ──yes──► 截断返回
 ```
 
-## 5. Tool 规格（第一期）
+## 5. Tool 规格
 
 所有 tool **绑定当前登录用户**，参数中 **禁止** `user_id`。
 
@@ -120,10 +120,18 @@ backend/app/agent/
 - **参数**：`limit`  
 - **实现**：优先 service；无则 ORM 查询 `DietRecord` 按 `meal_time` desc  
 
-### 5.7 第二期（不做进 MVP）
+### 5.7 `search_knowledge`
+
+- **类型**：只读、全局公共语料，不查询用户个人数据
+- **参数**：`query`（2–200 字符）、`limit`（1–5，默认 3）
+- **实现**：`services.knowledge_retrieval.KnowledgeRetriever`
+- **检索**：中文字符 bigram BM25；可选 query embedding；RRF 融合
+- **返回**：`citations`、`count`、`retrieval`、`degraded`；每个 citation 含中英片段、标题、源站、URL、许可和分数
+- **降级**：embedding 关闭时正常走 BM25；端点故障时 `degraded=true` 并退回 BM25；空库返回 `ok=true, count=0`
+
+### 5.8 后续工具
 
 - `add_diet_record`  
-- `search_knowledge`  
 - `list_medications` / reminders  
 
 ## 6. OpenAI tools JSON 形态
@@ -170,6 +178,8 @@ ToolResult:
 4. 不诊断、不开药；紧急情况就医  
 5. 中文、简洁、可引用工具返回的数字  
 6. 工具失败时说明原因与下一步  
+7. 常识、并发症、运动和饮食原则等问题必须先调用 `search_knowledge`，只能基于片段作答，并用 `[1]`、`[2]` 标注来源
+8. 知识检索无结果时明确说明知识库未找到资料，不凭模型记忆补答
 
 固定 disclaimer 追加在最终 `reply` 末尾（产品层也可再展示一次）。
 
@@ -180,7 +190,7 @@ ToolResult:
 ```text
 POST {LLM_BASE_URL}/chat/completions
 Headers: Authorization: Bearer {LLM_API_KEY}
-Body: model, messages, temperature, tools?, tool_choice=auto
+Body: model, messages, temperature, tools?；仅传 tools 时附 tool_choice=auto
 Timeout: LLM_TIMEOUT_SECONDS
 ```
 
@@ -195,9 +205,10 @@ Timeout: LLM_TIMEOUT_SECONDS
 | `记录/添加血糖 <数字>` + 可选「空腹/餐后」 | `add_glucose_record`（无「确认」则 preview） |
 | `统计/达标/周报/平均` | `get_glucose_stats` |
 | `最近血糖/查血糖/血糖记录` | `list_recent_glucose` |
+| 低/高血糖、并发症、运动、胰岛素、A1C、足部/眼底、饮食原则、碳水等 | `search_knowledge`，渲染标题、片段和来源链接 |
 | 其它 | 返回可用指令帮助 + 提示配置 LLM |
 
-`mode` 必须标记为 `fallback`，前端显示「规则模式」。
+匹配顺序固定为写入 → 统计 → 个人数据查询 → 知识问答 → 兜底，避免知识关键词抢占写意图。`mode` 必须标记为 `fallback`，前端显示「规则模式」。
 
 ## 10. HTTP API
 

@@ -33,7 +33,8 @@ ORM 定义真相源：`backend/app/db/models.py`。
 | `medication_records` | 用药 | 同上 |
 | `conversations` | 助理会话 | user_id |
 | `messages` | 会话消息 | conversation_id |
-| `knowledge_base` | 知识条目 | 全局或按设计 |
+| `knowledge_base` | 知识文档与来源元数据 | 全局语料 |
+| `knowledge_chunks` | 双语检索片段与可选 embedding | document_id |
 | `reminders` | 提醒（若启用） | user_id |
 
 ## 4. 枚举约定（血糖）

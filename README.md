@@ -5,7 +5,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
 [![Vue](https://img.shields.io/badge/Vue-3-42b883.svg)](https://vuejs.org/)
 
-面向糖尿病日常管理的全栈健康助理。后端以 FastAPI、SQLAlchemy 和 JWT 为基础，通过 OpenAI-compatible Tool Calling 读取用户自己的血糖、饮食和健康档案；写操作必须经过二次确认，并记录可审计的工具调用结果。
+面向糖尿病日常管理的全栈健康助理。后端以 FastAPI、SQLAlchemy 和 JWT 为基础，通过 OpenAI-compatible Tool Calling 读取用户自己的血糖、饮食和健康档案，并通过带来源引用的 RAG 知识检索回答自我管理常识；写操作必须经过二次确认，并记录可审计的工具调用结果。
 
 > 本项目用于健康数据管理与软件工程实践，不提供医疗诊断、处方或紧急医疗建议。
 
@@ -15,6 +15,7 @@
 - 用户级数据隔离：每个工具绑定当前 JWT 用户，不接受模型传入任意 user_id。
 - 写操作门禁：新增血糖记录默认只返回预览，客户端显式确认后才落库。
 - 可用性降级：LLM 不可用时自动进入规则模式，仍可查询最近血糖、统计数据和预览记录。
+- 有出处的知识问答：中文 BM25 默认可用，可选叠加 query embedding；向量端点故障自动降级，回复和工具轨迹保留来源链接。
 - 调用审计：会话 metadata 保存运行模式、轮数、工具调用和工具结果。
 - 可重复测试：pytest 覆盖认证、越权、Agent runtime、工具参数和写入确认。
 
@@ -29,6 +30,8 @@ flowchart LR
     LLM -->|tool calls| AGENT
     AGENT --> REGISTRY[用户绑定的工具注册表]
     REGISTRY --> SERVICES[业务 services]
+    REGISTRY --> RAG[BM25 + optional vector RAG]
+    RAG --> KB[(knowledge_base + chunks)]
     REST --> SERVICES
     SERVICES --> ORM[SQLAlchemy]
     ORM --> DB[(SQLite / MySQL)]
@@ -54,6 +57,7 @@ Agent 请求的核心流程：
 | evaluate_glucose_alert | 读 | 使用确定性目标区间规则评估血糖值 |
 | add_glucose_record | 写 | 预览或确认后新增当前用户的血糖记录 |
 | list_recent_diet | 读 | 查询当前用户最近的饮食记录 |
+| search_knowledge | 读 | 检索糖尿病自我管理科普片段并返回可核对的双语引用 |
 
 ## 技术栈
 
@@ -94,6 +98,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 Copy-Item ..\.env.example .env
+python scripts/seed_knowledge.py
 python -m uvicorn main:app --reload --port 8000
 ~~~
 
@@ -103,7 +108,9 @@ macOS 或 Linux 激活虚拟环境：
 source .venv/bin/activate
 ~~~
 
-默认配置使用本地 SQLite，并在启动时自动创建表。数据库文件只存在于本地，不应提交到 Git。
+默认配置使用本地 SQLite，并在启动时自动创建表。`seed_knowledge.py` 会幂等补齐旧数据库字段并导入 `data/knowledge/corpus.jsonl`；数据库文件只存在于本地，不应提交到 Git。
+
+仓库当前附带 60 篇、429 个 chunk 的完整双语语料（NIDDK 38 篇、MedlinePlus 22 篇），可直接 seed 后离线检索。语料已通过白名单、robots 节流、许可范围、数字一致性、中文完整性和 URL 唯一性自动门禁；`data/knowledge/corpus.meta.json` 仍明确标记 `license_reviewed=false`，维护者完成人工许可复核前不得宣称许可验收已完成。
 
 如需连接模型服务，请在 backend/.env 中配置：
 
@@ -113,6 +120,15 @@ AGENT_REQUIRE_CONFIRM_WRITE=true
 LLM_BASE_URL=https://your-provider.example/v1
 LLM_API_KEY=replace-with-your-key
 LLM_MODEL=your-model-name
+~~~
+
+向量检索是可选增强；不配置时使用纯 BM25：
+
+~~~dotenv
+EMBEDDING_ENABLED=true
+EMBEDDING_BASE_URL=https://your-provider.example/v1
+EMBEDDING_API_KEY=replace-with-your-key
+EMBEDDING_MODEL=your-embedding-model
 ~~~
 
 后端启动后可访问：
@@ -167,8 +183,10 @@ GitHub Actions 会在 push 和 pull request 时执行后端测试及前端构建
 │   │   ├── db/             # SQLAlchemy 会话与 ORM
 │   │   ├── services/       # 业务逻辑和事务边界
 │   │   └── models/         # Pydantic 请求与响应模型
+│   ├── scripts/            # 知识摄取与幂等 seed
 │   ├── tests/              # 自动化测试
 │   └── main.py
+├── data/knowledge/          # 版本化双语语料、元数据与许可记录
 ├── frontend/
 │   └── src/
 │       ├── api/

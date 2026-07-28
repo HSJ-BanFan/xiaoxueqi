@@ -3,8 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db, get_current_active_superuser
-from app.db.models import User, KnowledgeBase
+from app.db.models import User
 from app.models.assistant import KnowledgeBaseCreate, KnowledgeBaseUpdate
+from app.services.knowledge_retrieval import KnowledgeRetriever, RetrievalResult
 from app.services.assistant import (
     create_knowledge_base_entry, get_knowledge_base_entry, 
     get_knowledge_base_entries, update_knowledge_base_entry,
@@ -58,6 +59,18 @@ def read_entries(
         })
     
     return result
+
+
+@router.get("/search", response_model=RetrievalResult)
+def search_knowledge(
+    q: str = Query(..., min_length=2, max_length=200),
+    limit: int = Query(3, ge=1, le=5),
+    source: Optional[str] = Query(default=None, min_length=1, max_length=32),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> RetrievalResult:
+    """Search the versioned diabetes self-management corpus."""
+    return KnowledgeRetriever(db).search(q, limit=limit, source_key=source)
 
 
 @router.get("/{entry_id}", response_model=dict)
@@ -116,32 +129,3 @@ def delete_entry(
     删除知识库条目（仅管理员）
     """
     delete_knowledge_base_entry(db=db, entry_id=entry_id)
-
-
-@router.get("/search/{query}", response_model=List[dict])
-def search_knowledge(
-    query: str,
-    limit: int = Query(3, ge=1, le=10),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-) -> Any:
-    """
-    搜索知识库
-    """
-    # 直接从数据库搜索而不是使用向量数据库
-    # 简单的基于关键字的模糊搜索
-    entries = db.query(KnowledgeBase).filter(
-        KnowledgeBase.content.ilike(f"%{query}%") | 
-        KnowledgeBase.title.ilike(f"%{query}%")
-    ).limit(limit).all()
-    
-    results = []
-    for entry in entries:
-        results.append({
-            "id": entry.id,
-            "title": entry.title,
-            "content": entry.content,
-            "score": 1.0  # 默认评分
-        })
-    
-    return results 

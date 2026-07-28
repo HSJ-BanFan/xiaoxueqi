@@ -1,4 +1,16 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime, Text, JSON, Enum
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
@@ -209,12 +221,49 @@ class KnowledgeBase(Base):
     __tablename__ = "knowledge_base"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    title = Column(String(100), nullable=False)
+    title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
     source = Column(String(255), nullable=True)
-    tags = Column(JSON, nullable=False, default=[])
+    tags = Column(JSON, nullable=False, default=list)
+    source_key = Column(String(32), nullable=True, index=True)
+    source_url = Column(String(512), nullable=True)
+    title_en = Column(String(255), nullable=True)
+    license = Column(String(255), nullable=True)
+    retrieved_at = Column(DateTime, nullable=True)
+    content_hash = Column(String(64), nullable=True, index=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    chunks = relationship(
+        "KnowledgeChunk",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        order_by="KnowledgeChunk.chunk_index",
+    )
+
+
+class KnowledgeChunk(Base):
+    __tablename__ = "knowledge_chunks"
+    __table_args__ = (
+        UniqueConstraint("document_id", "chunk_index", name="uq_knowledge_chunk_document_index"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    document_id = Column(
+        String(36),
+        ForeignKey("knowledge_base.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    chunk_index = Column(Integer, nullable=False)
+    text_zh = Column(Text, nullable=False)
+    text_en = Column(Text, nullable=True)
+    char_count = Column(Integer, nullable=False)
+    embedding = Column(JSON, nullable=True)
+    embedding_model = Column(String(64), nullable=True)
+    created_at = Column(DateTime, default=func.now())
+
+    document = relationship("KnowledgeBase", back_populates="chunks")
 
 
 class FoodNutrition(Base):
@@ -230,4 +279,4 @@ class FoodNutrition(Base):
     category = Column(Text, nullable=False)
     diabetes_index = Column(Float, nullable=True)
     diabetes_friendly = Column(Integer, nullable=True)
-    image_url = Column(Text, nullable=True) 
+    image_url = Column(Text, nullable=True)

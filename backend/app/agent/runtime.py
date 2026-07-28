@@ -24,6 +24,28 @@ _RECORD_PATTERNS = (
     re.compile(r"(?:记录|添加|录入)(?:一下)?(?:我的)?(?:血糖)?\s*(?:为|是|[:：])?\s*(\d{1,2}(?:\.\d+)?)"),
     re.compile(r"血糖\s*(?:为|是|[:：])?\s*(\d{1,2}(?:\.\d+)?)\s*(?:，|,|。|\s)*(?:请)?(?:帮我)?(?:记录|添加|录入)"),
 )
+_CITATION_MARKER_PATTERN = re.compile(r"\[(\d+)\]")
+
+_KNOWLEDGE_KEYWORDS = (
+    "低血糖",
+    "高血糖",
+    "并发症",
+    "运动",
+    "胰岛素",
+    "糖化",
+    "a1c",
+    "足部",
+    "糖尿病足",
+    "眼底",
+    "眼病",
+    "肾病",
+    "神经病变",
+    "饮食原则",
+    "碳水",
+    "酮症",
+    "生病日",
+    "妊娠糖尿病",
+)
 
 
 class HealthAgent:
@@ -85,6 +107,26 @@ class HealthAgent:
                             message,
                             confirm_write=confirm_write,
                             rounds=rounds,
+                        )
+                    if self._needs_knowledge_fallback(message, tool_results):
+                        return self.fallback(
+                            message,
+                            confirm_write=confirm_write,
+                            rounds=rounds,
+                        )
+                    knowledge_guard_reply = self._knowledge_guard_reply(
+                        content,
+                        tool_results,
+                    )
+                    if knowledge_guard_reply is not None:
+                        return AgentRunResult(
+                            reply=with_disclaimer(knowledge_guard_reply),
+                            mode="fallback",
+                            model=self.model,
+                            rounds=rounds,
+                            tool_calls=tool_calls,
+                            tool_results=tool_results,
+                            disclaimer=DISCLAIMER,
                         )
                     return AgentRunResult(
                         reply=with_disclaimer(content),
@@ -150,6 +192,12 @@ class HealthAgent:
                     confirm_write=confirm_write,
                     rounds=rounds,
                 )
+            if self._needs_knowledge_fallback(message, tool_results):
+                return self.fallback(
+                    message,
+                    confirm_write=confirm_write,
+                    rounds=rounds,
+                )
             return AgentRunResult(
                 reply=with_disclaimer(self._render_results(tool_results, "工具调用轮数已达上限。")),
                 mode="agent",
@@ -197,10 +245,16 @@ class HealthAgent:
             call = ToolCallDTO(name="list_recent_glucose", arguments=arguments)
             result = self.registry.dispatch(call.name, arguments)
             reply = self._render_recent_glucose(result)
+        elif self._is_knowledge_intent(message):
+            arguments = {"query": message, "limit": 3}
+            call = ToolCallDTO(name="search_knowledge", arguments=arguments)
+            result = self.registry.dispatch(call.name, arguments)
+            reply = self._render_knowledge(result)
         else:
             reply = (
                 "当前处于规则模式。你可以说：“最近血糖”、“本周血糖统计”，"
-                "或“记录血糖 6.5 空腹”；写入时需再次携带 confirm_write=true 确认。"
+                "“低血糖怎么办”或“记录血糖 6.5 空腹”；"
+                "写入时需再次携带 confirm_write=true 确认。"
             )
 
         return AgentRunResult(
@@ -281,6 +335,53 @@ class HealthAgent:
         )
 
     @staticmethod
+    def _needs_knowledge_fallback(
+        message: str,
+        results: Sequence[ToolResultDTO],
+    ) -> bool:
+        return HealthAgent._is_knowledge_intent(message) and not any(
+            result.name == "search_knowledge" for result in results
+        )
+
+    @staticmethod
+    def _is_knowledge_intent(message: str) -> bool:
+        lowered = message.lower()
+        return any(keyword in lowered for keyword in _KNOWLEDGE_KEYWORDS)
+
+    @classmethod
+    def _knowledge_guard_reply(
+        cls,
+        content: str,
+        results: Sequence[ToolResultDTO],
+    ) -> Optional[str]:
+        knowledge_results = [
+            result for result in results if result.name == "search_knowledge"
+        ]
+        if not knowledge_results:
+            return None
+
+        latest = knowledge_results[-1]
+        data = latest.data if latest.ok and isinstance(latest.data, dict) else {}
+        citations = data.get("citations") or []
+        if not citations:
+            return cls._render_knowledge(latest)
+
+        available_indexes = {
+            citation.get("index")
+            for citation in citations
+            if isinstance(citation, dict) and isinstance(citation.get("index"), int)
+        }
+        referenced_indexes = {
+            int(match.group(1))
+            for match in _CITATION_MARKER_PATTERN.finditer(content)
+        }
+        if not referenced_indexes or not referenced_indexes.issubset(
+            available_indexes
+        ):
+            return cls._render_knowledge(latest)
+        return None
+
+    @staticmethod
     def _measurement_time(message: str) -> MeasurementTimeEnum:
         mappings = (
             (("早餐后", "早饭后"), MeasurementTimeEnum.AFTER_BREAKFAST),
@@ -357,6 +458,33 @@ class HealthAgent:
             lines.append(f"另有 {len(records) - 5} 条记录未展开。")
         return "\n".join(lines)
 
+    @staticmethod
+    def _render_knowledge(result: ToolResultDTO) -> str:
+        if not result.ok or not isinstance(result.data, dict):
+            return f"暂时无法检索知识库：{result.error or '没有可用结果'}。"
+        citations = result.data.get("citations") or []
+        if not citations:
+            return "知识库中没有找到相关资料。"
+
+        lines = ["根据知识库中的权威科普资料："]
+        for citation in citations:
+            if not isinstance(citation, dict):
+                continue
+            index = citation.get("index")
+            title = citation.get("title") or "未命名资料"
+            text = str(citation.get("text_zh") or "").strip()
+            excerpt = text.split("\n\n", 1)[0]
+            if len(excerpt) > 500:
+                excerpt = f"{excerpt[:500].rstrip()}…"
+            lines.append(f"\n[{index}] {title}\n{excerpt}")
+            source_url = citation.get("source_url")
+            source_key = citation.get("source_key") or "来源"
+            if source_url:
+                lines.append(f"来源：{source_key} · {source_url}")
+            else:
+                lines.append(f"来源：{source_key}")
+        return "\n".join(lines)
+
     @classmethod
     def _render_results(cls, results: Sequence[ToolResultDTO], prefix: str = "") -> str:
         if results:
@@ -365,6 +493,8 @@ class HealthAgent:
                 rendered = cls._render_stats(latest)
             elif latest.name == "list_recent_glucose":
                 rendered = cls._render_recent_glucose(latest)
+            elif latest.name == "search_knowledge":
+                rendered = cls._render_knowledge(latest)
             elif latest.ok:
                 rendered = "工具已执行，结果可在本次响应的 tool_results 中查看。"
             else:

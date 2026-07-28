@@ -57,7 +57,7 @@
 | I21 | P1 | 周对比 | 这周比上周怎样 | `get_glucose_stats`×2（week + 需支持或两次 period） | — | 否 |
 | I22 | P1 | 异常追问 | （系统侧触发或用户问为何总高） | `get_glucose_stats` 或 `list_recent_glucose` | `evaluate_glucose_alert` | 否 |
 | I23 | P1 | 提醒意图落库 | 每天 8 点提醒我测血糖 | `create_reminder`（若实现） | — | 是（提醒表） |
-| I24 | P1 | 知识问答 | 运动前后要注意什么 | `search_knowledge`（若实现） | — | 否 |
+| I24 | P1 | 知识问答 | 运动前后要注意什么 | `search_knowledge` | — | 否 |
 
 ---
 
@@ -241,9 +241,22 @@
 
 ---
 
-### I23–I24（P1 可选）
+### I23 提醒意图落库（P1 可选）
 
 见 [agent-intelligence-plan.md](./agent-intelligence-plan.md) P1 工具扩展；未实现前意图应落入 I08/I09，不假装已支持。
+
+---
+
+### I24 知识问答
+
+| 项 | 规格 |
+|----|------|
+| **触发** | 糖尿病常识、并发症、运动与饮食原则等非个人数据问题 |
+| **必调** | `search_knowledge(query, limit=1..5)` |
+| **行为** | 只基于 citations 回答；相应句末标 `[1]`、`[2]`；工具轨迹展示可点击来源 |
+| **空库** | 明确回答“知识库中没有找到相关资料”，不凭记忆补答 |
+| **Fallback** | 在写入、统计和个人查询分支之后匹配；返回标题、片段和来源 URL |
+| **验收** | [x] Agent tool_call 的 citations 进入 tool_results；[x] 未检索、空检索、缺失/越界引用时强制降级；[x] LLM 失败仍可检索；[x] 写意图优先级回归；[x] API 与前端来源卡 |
 
 ---
 
@@ -257,6 +270,7 @@
 | `evaluate_glucose_alert` | 读/规则 | value | level/min/max/advice | 缺 value |
 | `add_glucose_record` | 写 | value, measurement_time, confirm | preview 或 id | 校验/DB |
 | `list_recent_diet` | 读 | limit | 饮食摘要列表 | ok=false |
+| `search_knowledge` | 读 | query, limit | citations/count/retrieval/degraded | 空库 count=0；异常 ok=false |
 
 写 tool 伪状态：
 
@@ -393,7 +407,8 @@ confirm=true  → commit, 返回 id
 - [ ] I20 周报  
 - [ ] I21 对比（可选）  
 - [ ] I22 异常追问  
-- [ ] I23/I24 按计划  
+- [ ] I23 提醒意图
+- [x] I24 知识问答
 
 ---
 
@@ -402,3 +417,4 @@ confirm=true  → commit, 返回 id
 | 日期 | 变更 |
 |------|------|
 | 2026-07-26 | 初版：P0/P1 意图规格 + 验收矩阵 + 演示脚本 |
+| 2026-07-28 | I24 落地：RAG 工具、规则降级、来源引用与回归验收 |

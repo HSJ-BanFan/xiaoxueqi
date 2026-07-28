@@ -62,3 +62,4 @@ coverage/
 *.sqlite3
 frontend/dist/
 AppData/
+data/knowledge/.rewrite-cache.json

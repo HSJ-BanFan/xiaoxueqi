@@ -70,7 +70,7 @@ Vue AssistantView
 │  evaluate_glucose_alert  (rules)    │
 │  add_glucose_record (confirm gate)  │
 │  list_recent_diet                   │
-│  (P1) create_reminder / search_kb   │
+│  search_knowledge ✓ / create_reminder (P1) │
 └──────────────┬──────────────────────┘
                ▼
          services/*  →  SQLAlchemy  →  DB
@@ -142,7 +142,7 @@ Vue AssistantView
 | 2 | 异常追问 | I22 | 产品感、非空聊 |
 | 3 | 提醒意图落库 | I23 | 可扩展，推送可后做 |
 | 4 | 周对比 | I21 | 需统计能力扩展 |
-| 5 | 知识库 tool | I24 | 轻量检索即可 |
+| 5 | 知识库 tool | I24 | **已完成**：BM25 + 可选向量、来源引用、fallback |
 
 ### P1 DoD（若做周报）
 
@@ -209,6 +209,7 @@ Agent **不替代** REST：
 
 - [ ] I20 周报  
 - [ ] I22 异常追问  
+- [x] I24 知识库 tool：版本化语料、混合检索、Agent/REST/前端接入
 
 ### 对齐 roadmap
 

@@ -4,7 +4,7 @@
 
 - 门面项目必须有**可重复的自动化测试**  
 - CI/本地不依赖真实 Ollama、不依赖外网 LLM  
-- 覆盖：鉴权、越权、血糖主路径、Agent fallback、写确认门禁  
+- 覆盖：鉴权、越权、血糖主路径、Agent fallback、写确认门禁、离线 RAG 检索与向量降级
 
 ## 2. 目录规划
 
@@ -18,6 +18,10 @@ backend/tests/
   test_agent_runtime.py
   test_agent_api.py
   test_llm_client.py
+  test_knowledge_retrieval.py
+  test_knowledge_api.py
+  test_seed_knowledge.py
+  test_ingest_knowledge.py
 ```
 
 遗留脚本（`test_login_api.py` 等）可保留作手工冒烟，**新逻辑以 pytest 为准**。
@@ -93,6 +97,7 @@ python -m pytest -q
 | T4 | evaluate_glucose_alert 低/高/正常 | level 正确 |
 | T5 | add 未 confirm | 不落库，requires_confirm=true |
 | T6 | add confirm=true | 落库 1 条 |
+| T7 | search_knowledge 参数与空库 | 严格校验；空库 ok=true,count=0 |
 
 ### 5.5 Agent runtime
 
@@ -103,6 +108,8 @@ python -m pytest -q
 | R3 | mock LLM 返回 get_glucose_stats tool_call | mode=agent，执行 tool |
 | R4 | LLM 超时/连接失败 | 降级 fallback，不 500 |
 | R5 | AGENT_ENABLED=false | mode=disabled |
+| R6 | fallback「低血糖怎么办」 | 返回 citations 与来源链接 |
+| R7 | 「记录血糖 6.5，担心低血糖」 | 写意图优先，不被知识路由抢占 |
 
 ### 5.6 API Agent（集成）
 
@@ -111,6 +118,21 @@ python -m pytest -q
 | C1 | POST /agent/chat 带 JWT | 200 + reply |
 | C2 | 无 JWT | 401 |
 | C3 | confirm 写入闭环 | 第二条请求后 DB +1 |
+
+### 5.7 Knowledge retrieval
+
+| ID | 用例 | 期望 |
+|----|------|------|
+| K1 | 中文 bigram + ASCII 分词 | 术语 token 稳定 |
+| K2 | BM25 排序 | 相关片段在前，RRF 分数非恒定 |
+| K3 | source 过滤与空语料 | 结果范围正确，不报错 |
+| K4 | mock embedder | BM25+vector 融合 |
+| K5 | embedder 抛异常 | retrieval=bm25,degraded=true |
+| K6 | legacy 表执行 seed | 幂等补列、建 chunks 表、重复 seed 跳过 |
+| K7 | 摄取纯函数与白名单 | 60 个唯一 URL；正文范围、数字保护、中文完整性和 robots crawl-delay 正确 |
+| K8 | Agent grounding 门禁 | 未检索、空检索、缺失引用、越界引用和错误工具耗尽轮次均进入确定性知识 fallback |
+
+全部知识测试使用内存 SQLite、fixture 语料和假 embedder，不执行摄取脚本，也不产生网络请求。
 
 ## 6. Mock LLM 方法
 

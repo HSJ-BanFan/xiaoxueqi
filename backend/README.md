@@ -10,6 +10,8 @@ FastAPI 后端负责用户认证、健康数据管理、Agent Tool Calling、会
 - prompts.py：医疗边界和工具使用约束
 - schemas.py：Agent 请求、响应和审计 DTO
 
+知识检索主路径位于 `app/services/knowledge_retrieval.py`：默认使用中文 bigram BM25，可选叠加 OpenAI-compatible query embedding，并通过 RRF 融合。运行时不抓取外网。
+
 app/ml 与 ml/llm 是早期模型实验代码，不是当前 Agent 启动的必需依赖。
 
 ## 本地启动
@@ -19,6 +21,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 Copy-Item ..\.env.example .env
+python scripts/seed_knowledge.py
 python -m uvicorn main:app --reload --port 8000
 ~~~
 
@@ -46,8 +49,25 @@ API 文档：
 | LLM_API_KEY | 模型服务密钥 |
 | LLM_MODEL | 模型名称 |
 | LLM_MAX_TOOL_ROUNDS | 单次 Agent 调用的最大工具轮数 |
+| EMBEDDING_ENABLED | 是否为知识检索启用可选向量层 |
+| EMBEDDING_BASE_URL / API_KEY / MODEL | OpenAI-compatible embeddings 配置 |
 
-LLM 不可用时，Agent 会进入 fallback 规则模式。
+LLM 不可用时，Agent 会进入 fallback 规则模式；只要已执行知识 seed，规则模式仍可回答命中关键词的知识问题并返回来源链接。
+
+## 知识语料
+
+~~~powershell
+# 导入仓库自带完整语料；可重复执行
+python scripts/seed_knowledge.py
+
+# 仅验证一个白名单页面，不改写、不写产物
+python scripts/ingest_knowledge.py --only niddk --limit 1 --no-rewrite --dry-run
+
+# 无可用 LLM 端点时，使用构建期翻译 fallback 生成完整产物
+python scripts/ingest_knowledge.py --rewrite-provider google --no-embed
+~~~
+
+摄取脚本只访问 `scripts/sources.py` 的 60 个显式白名单 URL，按源站 robots 动态取最大请求间隔（NIDDK 当前为 10 秒），并默认只在 40–60 篇、300–500 chunks、0 失败时覆盖产物。仓库语料当前为 60 篇、429 chunks；必须继续人工复核 `../data/knowledge/LICENSES.md`，许可状态明确保持待复核。
 
 ## 创建本地管理员
 
@@ -73,6 +93,7 @@ python create_admin.py
 | GET/POST /api/v1/diet | 饮食记录 |
 | GET/POST /api/v1/health | 健康记录 |
 | POST /api/v1/agent/chat | Tool Calling 智能助理 |
+| GET /api/v1/knowledge/search?q=... | 带来源的知识检索 |
 
 完整契约见 ../docs/api.md。
 

@@ -20,6 +20,27 @@ export interface AgentToolCall {
   arguments: Record<string, unknown>
 }
 
+export interface Citation {
+  index: number
+  chunk_id: string
+  document_id: string
+  title: string
+  source_key: string
+  source_url?: string | null
+  license?: string | null
+  retrieved_at?: string | null
+  text_zh: string
+  text_en?: string | null
+  score: number
+}
+
+export interface KnowledgeToolData {
+  citations: Citation[]
+  count: number
+  retrieval: 'bm25' | 'bm25+vector'
+  degraded: boolean
+}
+
 export interface ToolResult {
   name: string
   ok: boolean

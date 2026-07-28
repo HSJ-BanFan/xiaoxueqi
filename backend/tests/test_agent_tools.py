@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 
 from app.agent.tools import HealthToolRegistry
-from app.db.models import DietRecord, GlucoseRecord
+from app.db.models import DietRecord, GlucoseRecord, KnowledgeBase, KnowledgeChunk
 from app.models.diet import MealTypeEnum
 from app.models.glucose import (
     GlucoseCreate,
@@ -150,3 +150,83 @@ def test_list_recent_diet_uses_current_users_service_query(db, user_a, user_b):
     assert result.ok is True
     assert result.data["count"] == 1
     assert result.data["records"][0]["user_id"] == user_a.id
+
+
+def add_knowledge_chunk(db):
+    text = "低血糖可能出现出汗、发抖或头晕，应及时按个人管理计划处理。"
+    db.add(
+        KnowledgeBase(
+            id="knowledge-document",
+            title="低血糖的识别与处理",
+            content=text,
+            source="NIDDK",
+            tags=["低血糖"],
+            source_key="niddk",
+            source_url="https://example.test/hypoglycemia",
+            license="public domain test fixture",
+            content_hash="k" * 64,
+            chunks=[
+                KnowledgeChunk(
+                    id="knowledge-chunk",
+                    chunk_index=0,
+                    text_zh=text,
+                    text_en="Hypoglycemia may cause sweating, shaking, or dizziness.",
+                    char_count=len(text),
+                )
+            ],
+        )
+    )
+    db.commit()
+
+
+def test_search_knowledge_returns_complete_citation_payload(db, user_a):
+    add_knowledge_chunk(db)
+
+    result = HealthToolRegistry(db, user_a).dispatch(
+        "search_knowledge",
+        {"query": "低血糖怎么办", "limit": 3},
+    )
+
+    assert result.ok is True
+    assert result.data["count"] == 1
+    citation = result.data["citations"][0]
+    assert citation["index"] == 1
+    assert citation["chunk_id"] == "knowledge-chunk"
+    assert citation["title"] == "低血糖的识别与处理"
+    assert citation["source_key"] == "niddk"
+    assert citation["source_url"].startswith("https://")
+    assert citation["text_zh"]
+    assert citation["text_en"]
+    assert citation["score"] > 0
+
+
+@pytest.mark.parametrize("limit", [0, 6])
+def test_search_knowledge_rejects_limit_outside_tool_boundary(db, user_a, limit):
+    result = HealthToolRegistry(db, user_a).dispatch(
+        "search_knowledge",
+        {"query": "低血糖", "limit": limit},
+    )
+
+    assert result.ok is False
+    assert "校验失败" in result.error
+
+
+def test_search_knowledge_rejects_extra_fields(db, user_a):
+    result = HealthToolRegistry(db, user_a).dispatch(
+        "search_knowledge",
+        {"query": "低血糖", "user_id": "other-user"},
+    )
+
+    assert result.ok is False
+    assert "校验失败" in result.error
+
+
+def test_search_knowledge_empty_database_is_not_an_error(db, user_a):
+    result = HealthToolRegistry(db, user_a).dispatch(
+        "search_knowledge",
+        {"query": "低血糖"},
+    )
+
+    assert result.ok is True
+    assert result.data["count"] == 0
+    assert result.data["citations"] == []

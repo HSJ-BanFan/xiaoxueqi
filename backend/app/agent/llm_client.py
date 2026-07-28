@@ -49,7 +49,6 @@ class OpenAICompatibleClient:
             "model": model or self.model,
             "messages": messages,
             "temperature": self.temperature,
-            "tool_choice": "auto",
             # Some OpenAI-compatible proxies default Gemini-family models to
             # SSE even when the caller did not request streaming. The Agent
             # runtime consumes one complete response per tool round.
@@ -57,6 +56,7 @@ class OpenAICompatibleClient:
         }
         if tools:
             payload["tools"] = tools
+            payload["tool_choice"] = "auto"
 
         headers = {"Content-Type": "application/json"}
         if self.api_key:

@@ -31,7 +31,13 @@
 │  ┌──────────────┐  ┌──────────────────────────────────────┐ │
 │  │ services/*   │◄─│ agent/ (tools → services only)       │ │
 │  └──────┬───────┘  └──────────────────────────────────────┘ │
-│         ▼                                                   │
+│         │                 │ search_knowledge                │
+│         │                 ▼                                 │
+│         │        ┌────────────────────────────────────────┐ │
+│         │        │ knowledge_retrieval                    │ │
+│         │        │ Chinese BM25 + optional vector + RRF   │ │
+│         │        └──────────────────┬─────────────────────┘ │
+│         ▼                           ▼                       │
 │  ┌──────────────┐     ┌───────────────────────────────────┐ │
 │  │ SQLAlchemy   │     │ LLM OpenAI-compatible (optional)  │ │
 │  │ SQLite/MySQL │     │ Ollama / DeepSeek / OpenAI ...    │ │
@@ -79,7 +85,7 @@ Client
 | 饮食 | `diet_records` | `/api/v1/diet` |
 | 健康 | `health_records` 及子表 | `/api/v1/health` |
 | 对话 | `conversations`, `messages` | `/api/v1/assistant` |
-| 知识库 | `knowledge_base` | `/api/v1/knowledge` |
+| 知识库 | `knowledge_base`, `knowledge_chunks` | `/api/v1/knowledge` |
 | 营养 | 食物数据相关 | `/api/v1/nutrition` |
 | 监测 | 调度 + mock 设备 | `/api/v1/glucose-monitor` |
 | 系统 | — | `/api/v1/system`（或根路径，以实现为准） |
@@ -104,6 +110,25 @@ POST /api/v1/agent/chat
 
 详细设计：[agent-design.md](./agent-design.md)。
 
+### 6.1 RAG 知识检索数据流
+
+```text
+离线 ingest（不进 CI）
+  白名单 URL → 正文提取 → 英文切片 → 中文改写 → 可选 embedding
+  → data/knowledge/corpus.jsonl + corpus.meta.json + LICENSES.md
+
+部署 seed
+  scripts/seed_knowledge.py → 幂等补列/upsert → knowledge_base + knowledge_chunks
+
+运行时
+  query → 中文 bigram BM25 ─┐
+                            ├→ RRF → Citation[]
+  query embedding（可选）───┘
+  向量端点异常 → BM25，degraded=true
+```
+
+语料是版本化构建产物，运行时不访问源站。当前仓库包含 60 篇、429 chunks 的 NIDDK/MedlinePlus 完整双语语料；自动质量门禁已通过，但 `data/knowledge/LICENSES.md` 的维护者人工许可复核仍是正式发布前置条件。
+
 ## 7. 前端结构
 
 ```text
@@ -126,6 +151,7 @@ frontend/src/
 | DB | SQLite 文件 | `DATABASE_URL` 可切 MySQL |
 | 前端 | Vite :5173 | `VITE_API_URL` 指向 API |
 | LLM | 可选 | 通过 `LLM_BASE_URL` 接入任意 OpenAI-compatible 服务；不可用时进入 fallback |
+| Embedding | 可选 | 只为 query 调用 OpenAI-compatible `/embeddings`；默认关闭 |
 | Scheduler | 进程内 | reload 可能双启，开发可关 |
 
 ## 9. 当前仓库状态
@@ -135,6 +161,7 @@ frontend/src/
 - 业务 REST、JWT、用户级数据隔离与 Vue 页面
 - `app/agent/` Tool Calling runtime、严格工具 Schema、写确认门禁与 fallback
 - `POST /api/v1/agent/chat`、对话持久化和工具审计 metadata
+- `search_knowledge`、中文 BM25 + 可选向量 RRF、知识 REST API 与前端来源卡
 - pytest 自动化测试与 GitHub Actions 质量门禁
 - 作品化 README、数据库文件排除和公开凭据清理
 

@@ -158,6 +158,43 @@ router.include_router(system.router, prefix="/system", tags=["系统"])
 
 实现细节以对应 endpoint 与 `/docs` 为准；新增字段时更新本节。
 
+### 5.1 `GET /api/v1/knowledge/search`
+
+旧路径 `/api/v1/knowledge/search/{query}` 已移除。新接口使用查询参数并返回统一检索结果：
+
+| 参数 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `q` | string | 2–200 字符，必填 | 检索问题 |
+| `limit` | integer | 1–5，默认 3 | 引用数量 |
+| `source` | string | 最长 32，可选 | `niddk` / `cdc` / `medlineplus` |
+
+需要 Bearer JWT。响应示例：
+
+```json
+{
+  "citations": [
+    {
+      "index": 1,
+      "chunk_id": "uuid",
+      "document_id": "uuid",
+      "title": "低血糖的识别与处理",
+      "source_key": "niddk",
+      "source_url": "https://www.niddk.nih.gov/...",
+      "license": "...",
+      "retrieved_at": "2026-07-28T00:00:00",
+      "text_zh": "...",
+      "text_en": "...",
+      "score": 0.01639344
+    }
+  ],
+  "count": 1,
+  "retrieval": "bm25",
+  "degraded": false
+}
+```
+
+`retrieval` 为 `bm25` 或 `bm25+vector`。仅在向量层已请求但不可用时，`degraded=true`；未启用 embedding 时纯 BM25 属于正常模式。
+
 ---
 
 ## 6. Assistant（会话） `/api/v1/assistant`
@@ -233,6 +270,12 @@ Agent 升级后：会话 CRUD 可继续用；**生成回复主路径改为 Agent
 2. 返回 `requires_confirm=true` 的 tool_result + 预览文案  
 3. 前端点「确认写入」→ 再次 `POST /chat`，`confirm_write=true`，message 可重复或固定确认话术  
 4. 服务端 tool `confirm=true` 后落库  
+
+### 7.3 知识问答
+
+Agent 的第 7 个工具 `search_knowledge` 接受 `query`（2–200 字符）和 `limit`（1–5）。`tool_results[].data` 与上面的 `RetrievalResult` 相同；模型回答应使用 `[1]`、`[2]` 角标，前端工具轨迹将引用渲染为来源卡片。
+
+知识库为空时工具仍返回 `ok=true, count=0`。LLM 不可用时，规则模式会在写入、统计和个人数据查询分支之后匹配知识关键词，直接渲染引用与原文链接。
 
 （可选）另增 `POST /api/v1/agent/confirm` 携带 `pending_id`——非必须。
 

@@ -70,6 +70,14 @@ class Settings(BaseSettings):
     AGENT_REQUIRE_CONFIRM_WRITE: bool = os.getenv("AGENT_REQUIRE_CONFIRM_WRITE", "true").lower() == "true"
     SCHEDULER_ENABLED: bool = os.getenv("SCHEDULER_ENABLED", "false").lower() == "true"
 
+    # Optional query embeddings for hybrid knowledge retrieval. Document
+    # embeddings are generated offline and stored with each knowledge chunk.
+    EMBEDDING_ENABLED: bool = os.getenv("EMBEDDING_ENABLED", "false").lower() == "true"
+    EMBEDDING_BASE_URL: str = os.getenv("EMBEDDING_BASE_URL", "")
+    EMBEDDING_API_KEY: str = os.getenv("EMBEDDING_API_KEY", "")
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "")
+    EMBEDDING_TIMEOUT_SECONDS: float = float(os.getenv("EMBEDDING_TIMEOUT_SECONDS", "10"))
+
     # Legacy fields kept for older modules
     MODEL_PROVIDER: str = os.getenv("MODEL_PROVIDER", "disabled")
     MODEL_NAME: str = os.getenv("MODEL_NAME", "qwen2.5:7b")

@@ -1,6 +1,6 @@
 from app.agent.runtime import HealthAgent
 from app.agent.tools import HealthToolRegistry
-from app.db.models import GlucoseRecord
+from app.db.models import GlucoseRecord, KnowledgeBase, KnowledgeChunk
 from app.models.glucose import (
     GlucoseCreate,
     MeasurementMethodEnum,
@@ -200,3 +200,230 @@ def test_runtime_honors_max_tool_rounds(db, user_a):
     assert result.mode == "agent"
     assert result.rounds == 2
     assert len(fake.calls) == 2
+
+
+def add_knowledge(db):
+    text = "低血糖可能引起出汗、发抖和头晕，应根据既定管理计划及时处理。"
+    db.add(
+        KnowledgeBase(
+            id="runtime-knowledge",
+            title="低血糖处理",
+            content=text,
+            source="NIDDK",
+            tags=["低血糖"],
+            source_key="niddk",
+            source_url="https://example.test/hypoglycemia",
+            content_hash="r" * 64,
+            chunks=[
+                KnowledgeChunk(
+                    id="runtime-chunk",
+                    chunk_index=0,
+                    text_zh=text,
+                    text_en="Hypoglycemia can cause sweating, shaking, and dizziness.",
+                    char_count=len(text),
+                )
+            ],
+        )
+    )
+    db.commit()
+
+
+def test_mock_llm_search_knowledge_tool_call_exposes_citations(db, user_a):
+    add_knowledge(db)
+    fake = FakeClient(
+        [
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "call_knowledge",
+                        "type": "function",
+                        "function": {
+                            "name": "search_knowledge",
+                            "arguments": '{"query":"低血糖怎么办","limit":2}',
+                        },
+                    }
+                ],
+            },
+            {"role": "assistant", "content": "低血糖可能出现出汗和发抖。[1]"},
+        ]
+    )
+
+    result = HealthAgent(HealthToolRegistry(db, user_a), client=fake).run("低血糖怎么办")
+
+    assert result.mode == "agent"
+    assert result.tool_results[0].name == "search_knowledge"
+    assert result.tool_results[0].data["citations"][0]["source_url"].startswith("https://")
+    assert "[1]" in result.reply
+
+
+def test_knowledge_intent_forces_search_when_model_answers_without_tool(db, user_a):
+    add_knowledge(db)
+    fake = FakeClient(
+        [{"role": "assistant", "content": "低血糖时直接吃糖即可。"}]
+    )
+
+    result = HealthAgent(HealthToolRegistry(db, user_a), client=fake).run(
+        "低血糖怎么办"
+    )
+
+    assert result.mode == "fallback"
+    assert result.tool_results[0].name == "search_knowledge"
+    assert "https://example.test/hypoglycemia" in result.reply
+    assert "直接吃糖即可" not in result.reply
+
+
+def test_empty_knowledge_search_rejects_followup_model_answer(db, user_a):
+    fake = FakeClient(
+        [
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "call_empty_knowledge",
+                        "type": "function",
+                        "function": {
+                            "name": "search_knowledge",
+                            "arguments": '{"query":"低血糖怎么办","limit":2}',
+                        },
+                    }
+                ],
+            },
+            {"role": "assistant", "content": "低血糖时直接吃糖即可。"},
+        ]
+    )
+
+    result = HealthAgent(HealthToolRegistry(db, user_a), client=fake).run(
+        "低血糖怎么办"
+    )
+
+    assert result.mode == "fallback"
+    assert len(result.tool_results) == 1
+    assert result.tool_results[0].name == "search_knowledge"
+    assert result.tool_results[0].data["count"] == 0
+    assert "知识库中没有找到相关资料" in result.reply
+    assert "直接吃糖即可" not in result.reply
+
+
+def test_grounded_answer_requires_a_returned_citation_marker(db, user_a):
+    add_knowledge(db)
+    fake = FakeClient(
+        [
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "call_grounding",
+                        "type": "function",
+                        "function": {
+                            "name": "search_knowledge",
+                            "arguments": '{"query":"低血糖怎么办","limit":2}',
+                        },
+                    }
+                ],
+            },
+            {"role": "assistant", "content": "低血糖时直接吃糖即可。"},
+        ]
+    )
+
+    result = HealthAgent(HealthToolRegistry(db, user_a), client=fake).run(
+        "低血糖怎么办"
+    )
+
+    assert result.mode == "fallback"
+    assert result.tool_results[0].data["count"] == 1
+    assert "https://example.test/hypoglycemia" in result.reply
+    assert "[1]" in result.reply
+    assert "直接吃糖即可" not in result.reply
+
+
+def test_grounded_answer_rejects_unknown_citation_marker(db, user_a):
+    add_knowledge(db)
+    fake = FakeClient(
+        [
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "call_unknown_citation",
+                        "type": "function",
+                        "function": {
+                            "name": "search_knowledge",
+                            "arguments": '{"query":"低血糖怎么办","limit":2}',
+                        },
+                    }
+                ],
+            },
+            {"role": "assistant", "content": "低血糖时直接吃糖即可。[9]"},
+        ]
+    )
+
+    result = HealthAgent(HealthToolRegistry(db, user_a), client=fake).run(
+        "低血糖怎么办"
+    )
+
+    assert result.mode == "fallback"
+    assert "https://example.test/hypoglycemia" in result.reply
+    assert "[1]" in result.reply
+    assert "[9]" not in result.reply
+    assert "直接吃糖即可" not in result.reply
+
+
+def test_knowledge_intent_forces_search_after_wrong_tool_exhausts_rounds(db, user_a):
+    add_knowledge(db)
+    fake = FakeClient(
+        [
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "call_wrong_tool",
+                        "type": "function",
+                        "function": {"name": "get_profile", "arguments": "{}"},
+                    }
+                ],
+            }
+        ]
+    )
+
+    result = HealthAgent(
+        HealthToolRegistry(db, user_a),
+        client=fake,
+        max_rounds=1,
+    ).run("低血糖怎么办")
+
+    assert result.mode == "fallback"
+    assert result.tool_results[0].name == "search_knowledge"
+    assert "https://example.test/hypoglycemia" in result.reply
+
+
+def test_fallback_knowledge_route_returns_source_link(db, user_a):
+    add_knowledge(db)
+
+    result = HealthAgent(
+        HealthToolRegistry(db, user_a),
+        client=FailingClient(),
+    ).run("低血糖怎么办")
+
+    assert result.mode == "fallback"
+    assert result.tool_results[0].name == "search_knowledge"
+    assert "https://example.test/hypoglycemia" in result.reply
+    assert "[1]" in result.reply
+
+
+def test_write_intent_keeps_priority_over_knowledge_route(db, user_a):
+    add_knowledge(db)
+
+    result = HealthAgent(
+        HealthToolRegistry(db, user_a),
+        client=FailingClient(),
+    ).run("记录血糖 6.5，刚才担心低血糖", confirm_write=False)
+
+    assert result.tool_results[0].name == "add_glucose_record"
+    assert result.tool_results[0].requires_confirm is True
+    assert db.query(GlucoseRecord).count() == 0

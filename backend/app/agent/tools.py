@@ -23,6 +23,7 @@ from app.services.glucose import (
     get_glucose_statistics,
     get_user_glucose_records,
 )
+from app.services.knowledge_retrieval import KnowledgeRetriever
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,11 @@ class _AddGlucoseArgs(_StrictArgs):
     measurement_method: MeasurementMethodEnum = MeasurementMethodEnum.FINGER_STICK
     notes: Optional[str] = Field(default=None, max_length=500)
     confirm: bool = False
+
+
+class _SearchKnowledgeArgs(_StrictArgs):
+    query: str = Field(min_length=2, max_length=200)
+    limit: int = Field(default=3, ge=1, le=5)
 
 
 class HealthToolRegistry:
@@ -99,6 +105,12 @@ class HealthToolRegistry:
                 _LimitArgs,
                 "列出当前用户最近的饮食记录。",
                 self._list_recent_diet,
+            ),
+            "search_knowledge": (
+                _SearchKnowledgeArgs,
+                "检索糖尿病自我管理的权威科普资料；回答常识性问题前必须先调用。"
+                "不用于查询用户本人的血糖、饮食或档案数据。",
+                self._search_knowledge,
             ),
         }
 
@@ -263,6 +275,14 @@ class HealthToolRegistry:
             name="list_recent_diet",
             ok=True,
             data={"records": records, "count": len(records), "total": page.total},
+        )
+
+    def _search_knowledge(self, args: _SearchKnowledgeArgs) -> ToolResultDTO:
+        result = KnowledgeRetriever(self.db).search(args.query, limit=args.limit)
+        return ToolResultDTO(
+            name="search_knowledge",
+            ok=True,
+            data=result.model_dump(mode="json"),
         )
 
 

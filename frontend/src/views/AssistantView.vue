@@ -24,7 +24,8 @@
         </div>
         <h3>您好，我是小雪琪</h3>
         <p>
-          我可以读取您的血糖记录、生成统计摘要，并在您确认后记录新的血糖数据。
+          我可以读取您的血糖记录、生成统计摘要、检索有出处的糖尿病科普资料，
+          并在您确认后记录新的血糖数据。
         </p>
         <el-tag type="success" effect="plain">默认使用 Agent 主路径</el-tag>
       </section>
@@ -92,7 +93,66 @@
                 </div>
                 <div v-if="trace.result" class="tool-trace-block">
                   <span>{{ trace.result.ok ? '结果' : '错误' }}</span>
-                  <pre :class="{ 'tool-error': !trace.result.ok }">{{ formatToolResult(trace.result) }}</pre>
+                  <template v-if="isKnowledgeTrace(trace)">
+                    <div class="knowledge-trace-meta">
+                      <el-tag size="small" effect="plain">
+                        {{ getKnowledgeData(trace)?.retrieval === 'bm25+vector' ? '混合检索' : '关键词检索' }}
+                      </el-tag>
+                      <el-tag
+                        v-if="getKnowledgeData(trace)?.degraded"
+                        type="warning"
+                        size="small"
+                        effect="plain"
+                      >
+                        向量检索不可用，已用关键词检索
+                      </el-tag>
+                    </div>
+
+                    <div
+                      v-if="getKnowledgeData(trace)?.count === 0"
+                      class="knowledge-empty"
+                    >
+                      知识库中未找到相关资料
+                    </div>
+
+                    <div v-else class="citation-list">
+                      <article
+                        v-for="citation in getKnowledgeCitations(trace)"
+                        :key="citation.chunk_id"
+                        class="citation-card"
+                      >
+                        <div class="citation-heading">
+                          <span class="citation-index">[{{ citation.index }}]</span>
+                          <strong>{{ citation.title }}</strong>
+                          <el-tag size="small" effect="plain">
+                            {{ formatSourceKey(citation.source_key) }}
+                          </el-tag>
+                        </div>
+                        <p class="citation-text">{{ citation.text_zh }}</p>
+                        <div class="citation-actions">
+                          <a
+                            v-if="citation.source_url"
+                            :href="citation.source_url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            查看原文
+                          </a>
+                          <span v-if="citation.retrieved_at">
+                            资料截至 {{ formatRetrievedAt(citation.retrieved_at) }}
+                          </span>
+                        </div>
+                        <details v-if="citation.text_en" class="citation-original">
+                          <summary>查看英文原句</summary>
+                          <p>{{ citation.text_en }}</p>
+                        </details>
+                      </article>
+                    </div>
+                  </template>
+                  <pre
+                    v-else
+                    :class="{ 'tool-error': !trace.result.ok }"
+                  >{{ formatToolResult(trace.result) }}</pre>
                 </div>
               </div>
             </el-collapse-item>
@@ -204,6 +264,8 @@ import type {
   AgentChatResponse,
   AgentHistoryMessage,
   AgentToolCall,
+  Citation,
+  KnowledgeToolData,
   ToolResult
 } from '../api/agent'
 import { useUserStore } from '../stores/user'
@@ -269,6 +331,7 @@ const measurementTimeLabels: Record<string, string> = {
 const shortcuts: Shortcut[] = [
   { label: '最近血糖', prompt: '最近血糖', action: 'send' },
   { label: '本周血糖统计', prompt: '本周血糖统计', action: 'send' },
+  { label: '低血糖怎么办', prompt: '低血糖怎么办', action: 'send' },
   { label: '记录血糖引导', prompt: '记录血糖 6.5 空腹', action: 'prefill' }
 ]
 
@@ -520,6 +583,38 @@ const formatToolResult = (result: ToolResult) => {
   if (!result.ok) return result.error || '工具执行失败'
   if (result.data === undefined || result.data === null) return '执行成功'
   return formatJsonSummary(result.data)
+}
+
+const getKnowledgeData = (trace: ToolTrace): KnowledgeToolData | null => {
+  if (trace.name !== 'search_knowledge' || !trace.result?.ok || !isRecord(trace.result.data)) {
+    return null
+  }
+  if (!Array.isArray(trace.result.data.citations)) return null
+  return trace.result.data as unknown as KnowledgeToolData
+}
+
+const isKnowledgeTrace = (trace: ToolTrace) => getKnowledgeData(trace) !== null
+
+const getKnowledgeCitations = (trace: ToolTrace): Citation[] => {
+  return getKnowledgeData(trace)?.citations || []
+}
+
+const sourceLabels: Record<string, string> = {
+  niddk: 'NIDDK',
+  cdc: 'CDC',
+  medlineplus: 'MedlinePlus'
+}
+
+const formatSourceKey = (sourceKey: string) => sourceLabels[sourceKey] || sourceKey
+
+const formatRetrievedAt = (retrievedAt: string) => {
+  const date = new Date(retrievedAt)
+  if (Number.isNaN(date.getTime())) return retrievedAt
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date)
 }
 
 const formatJsonSummary = (value: unknown) => {
@@ -838,6 +933,90 @@ const scrollToBottom = () => {
 
 .tool-error {
   color: #b91c1c;
+}
+
+.knowledge-trace-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.knowledge-empty {
+  padding: 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 9px;
+  color: var(--assistant-muted);
+  text-align: center;
+  background: #ffffff;
+}
+
+.citation-list {
+  display: grid;
+  gap: 10px;
+}
+
+.citation-card {
+  padding: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.citation-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  color: #1e3a8a;
+}
+
+.citation-index {
+  color: var(--assistant-primary);
+  font-weight: 800;
+}
+
+.citation-text {
+  margin: 9px 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.citation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--assistant-muted);
+  font-size: 12px;
+}
+
+.citation-actions a {
+  color: var(--assistant-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.citation-actions a:hover {
+  text-decoration: underline;
+}
+
+.citation-original {
+  margin-top: 9px;
+  color: var(--assistant-muted);
+  font-size: 12px;
+}
+
+.citation-original summary {
+  cursor: pointer;
+  color: #475569;
+}
+
+.citation-original p {
+  margin: 8px 0 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 .confirmation-card {
