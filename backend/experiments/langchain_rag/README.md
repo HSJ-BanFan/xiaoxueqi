@@ -8,6 +8,7 @@
 - 把主 RAG 设计中的 `KnowledgeRetriever.search()` 包装成 LangChain `StructuredTool`。
 - 用 LCEL 组合“确定性检索 → 引用上下文 → OpenAI-compatible 模型 → 结构化响应”。
 - 检索结果和引用继续使用项目定义的契约，不引入 LangChain 向量库。
+- 空检索直接返回固定降级文案，不调用模型；有检索结果时校验引用编号，缺失或越界时抛出 `GroundingError`，交给项目 fallback 处理。
 
 ## 安装与测试
 
@@ -16,7 +17,7 @@ cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-langchain.txt
-python -m pytest tests/experiments/test_langchain_rag_adapter.py -q
+python -m pytest tests/experiments -q
 ```
 
 建议使用独立虚拟环境，因为 `langchain-core` 仍会带入 LangSmith 等传递依赖。默认
@@ -24,7 +25,7 @@ python -m pytest tests/experiments/test_langchain_rag_adapter.py -q
 
 ## 与主 RAG 实现对接
 
-主分支完成 `KnowledgeRetriever` 后，可以把绑定数据库会话的 `search` 方法直接传入：
+把绑定数据库会话的 `KnowledgeRetriever.search` 方法直接传入即可，不需要修改检索实现：
 
 ```python
 retriever = KnowledgeRetriever(db=db, embedder=embedder)
@@ -34,6 +35,8 @@ result = chain.invoke({"query": "低血糖怎么办", "limit": 3})
 
 `result` 保留 `answer`、`citations`、`retrieval` 和 `degraded`，因此可以继续复用当前 Agent API 的工具轨迹和前端引用卡契约。
 
+`test_langchain_rag_integration.py` 会用真实 `KnowledgeRetriever` 验证 RRF 引用和向量降级字段能穿过 LCEL；在只检出 spike、尚没有 RAG 实现的工作树中，该文件会自动跳过。当前 RAG 对接工作树中共有 7 项适配层测试和 2 项真实 seam 集成测试。
+
 ## 当前建议
 
-不要用 LangChain Agent 替换 `backend/app/agent/runtime.py`。现有 runtime 的用户绑定、写确认、审计和规则 fallback 都是项目价值所在；若采用 LangChain，优先只采用这里演示的 RAG 组合与可选工具适配。
+不要用 LangChain Agent 替换 `backend/app/agent/runtime.py`。现有 runtime 的用户绑定、写确认、审计和规则 fallback 都是项目价值所在；若采用 LangChain，优先只采用这里演示的 RAG 组合与可选工具适配。生产接入时由现有 runtime 捕获 `GroundingError` 并进入确定性知识 fallback。

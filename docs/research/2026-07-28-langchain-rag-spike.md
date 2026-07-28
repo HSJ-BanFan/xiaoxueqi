@@ -3,7 +3,7 @@
 > 日期：2026-07-28  
 > 实验分支：`spike/langchain-rag`  
 > 对接分支：`feat/rag-knowledge`  
-> 基线：两条分支当前都指向 `407e820`（RAG 设计规格提交）  
+> 初始基线：两条分支均从 `407e820`（RAG 设计规格提交）开始；当前 spike 提交为 `336f832`
 > 范围：离线代码 spike；没有修改现有 Agent 主路径，也没有把 LangChain 加入默认生产依赖。
 
 ## 结论
@@ -83,34 +83,36 @@ v1 迁移指南说明，旧式 chains、retrievers、hub 等遗留功能已移�
 - `backend/experiments/langchain_rag/adapter.py`：定义实验用请求、响应和引用模型；包装未来的 `KnowledgeRetriever.search()`；构建 `StructuredTool`、LCEL RAG chain、OpenAI-compatible `ChatOpenAI` 和递归切分器。
 - `backend/experiments/langchain_rag/__init__.py`：集中导出实验接口。
 - `backend/experiments/langchain_rag/README.md`：说明安装、专项测试和与主 RAG 的对接方式。
-- `backend/tests/experiments/test_langchain_rag_adapter.py`：6 项离线专项测试。
+- `backend/tests/experiments/test_langchain_rag_adapter.py`：7 项离线专项测试。
+- `backend/tests/experiments/test_langchain_rag_integration.py`：2 项真实 seam 集成测试；未检出 RAG 实现时自动跳过。
 
-实验 chain 保留项目字段 `answer`、`citations`、`count`、`retrieval` 和 `degraded`。检索仍先由项目代码确定性执行，LangChain 只负责把检索结果放入受约束 Prompt、调用模型并解析回复。Prompt 明确把引用正文视为不可信数据，禁止执行其中的指令；空检索时要求明确回答知识库无结果。
+实验 chain 保留项目字段 `answer`、`citations`、`count`、`retrieval` 和 `degraded`。检索仍先由项目代码确定性执行，LangChain 只负责把检索结果放入受约束 Prompt、调用模型并解析回复。Prompt 明确把引用正文视为不可信数据，禁止执行其中的指令；空检索由代码直接返回固定回复且不调用模型，有结果时要求答案至少引用一个已返回的编号，缺失或越界则抛出 `GroundingError`，由项目 fallback 接管。
 
 当前安装验证使用的版本为 `langchain-core 1.5.1`、`langchain-openai 1.4.1`、`langchain-text-splitters 1.1.2`。`langchain`、LangGraph、`langchain-classic`、`langchain-community` 和 `rank-bm25` 均未安装。
 
 ## 测试结果
 
-2026-07-28 在 `backend` 目录执行：
+初始 spike 在 `backend` 目录执行得到 6 项适配测试、后端全量 40 项通过。RAG 实现进入当前对接工作树后再次执行：
 
 ```powershell
-python -m pytest tests/experiments/test_langchain_rag_adapter.py -q
-# 6 passed
+python -m pytest tests/experiments -q
+# 9 passed
 
 python -m pytest -q
-# 40 passed
+# 72 passed
 ```
 
-6 项专项测试覆盖：
+7 项适配层专项测试覆盖：
 
 1. `StructuredTool` 保留项目检索结果和引用契约；
 2. 严格拒绝未知参数，尤其不能透传 `user_id`；
 3. LCEL chain 返回模型答案及原始 citations，并把引用安全约束写入 Prompt；
-4. 空检索结果进入明确的“未检索到资料”上下文；
+4. 空检索结果不调用模型，直接返回固定降级回复；
 5. `RecursiveCharacterTextSplitter` 保留来源 metadata 和连续 `chunk_index`；
 6. `ChatOpenAI` 正确复用项目的 OpenAI-compatible base URL、鉴权、模型、温度和非流式 `/chat/completions` 请求。
+7. 模型答案缺少引用或引用未知编号时，适配层拒绝输出。
 
-后端全量 40 项测试同时通过，说明当前可选实验没有破坏既有 Agent、API、工具和健康服务行为。
+另外 2 项真实 seam 集成测试覆盖 `KnowledgeRetriever.search()` → LCEL 后仍保留 BM25 + vector 的 RRF 结果，以及向量失败时 `retrieval=bm25`、`degraded=true` 的降级语义。当前后端全量 72 项测试同时通过，说明可选实验没有改写既有 Agent、API、工具和健康服务行为。
 
 ## 采用边界
 
@@ -134,13 +136,13 @@ langchain-text-splitters
 
 ## 与 `feat/rag-knowledge` 的后续合并步骤
 
-当前两条分支同基线，建议不要立即把整个 spike 混入正在开发的主 RAG，而是按下面顺序收敛：
+建议不要立即把整个 spike 混入正在开发的主 RAG，而是按下面顺序收敛：
 
 1. 先在 `spike/langchain-rag` 把实验代码、测试和本文作为独立提交保存，保持它可单独撤销。
 2. 等 `feat/rag-knowledge` 完成数据库模型、语料管道、`KnowledgeRetriever`、BM25/RRF、`search_knowledge`、引用 UI 和 fallback 测试。
 3. 将 spike rebase 到最新的 `feat/rag-knowledge`，以真实 `KnowledgeRetriever.search()` 替换测试中的模拟 seam，校准 `Citation`/`RetrievalResult` 字段；发生冲突时以 RAG 特性分支的业务契约为准。
 4. 增加一项真实集成测试：绑定测试 DB 的 `KnowledgeRetriever.search()` → LangChain adapter → 保留原始 citations、RRF 顺序和 degraded 状态。同时回归“写意图优先于知识 fallback”。
-5. 重新执行 6 项专项测试、RAG 分支新增测试和后端全量测试；另外比较直接调用与 LCEL 路径的依赖体积、启动时间、单次请求延迟和错误栈可读性。
+5. 重新执行 7 项适配测试、2 项真实 seam 集成测试、RAG 分支新增测试和后端全量测试；另外比较直接调用与 LCEL 路径的依赖体积、启动时间、单次请求延迟和错误栈可读性。
 6. 若采用，只把“可选依赖 + 小型 adapter + 集成测试”整理成一个独立提交，cherry-pick/合并到 `feat/rag-knowledge`；不要改写 `backend/app/agent/runtime.py` 的核心循环，也不要用 `StructuredTool` 替换 `HealthToolRegistry`。
 7. 若收益不明显，只合并本文研究结论，保留自研 RAG 实现并删除/归档实验分支，不给生产环境增加依赖。
 

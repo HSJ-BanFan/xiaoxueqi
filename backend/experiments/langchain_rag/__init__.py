@@ -2,6 +2,8 @@
 
 from experiments.langchain_rag.adapter import (
     Citation,
+    EMPTY_RETRIEVAL_ANSWER,
+    GroundingError,
     RAGRequest,
     RAGResponse,
     RetrievalPayload,
@@ -13,6 +15,8 @@ from experiments.langchain_rag.adapter import (
 
 __all__ = [
     "Citation",
+    "EMPTY_RETRIEVAL_ANSWER",
+    "GroundingError",
     "RAGRequest",
     "RAGResponse",
     "RetrievalPayload",

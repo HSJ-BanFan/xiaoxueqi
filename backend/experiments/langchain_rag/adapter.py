@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from typing import Any, Literal, Optional, Protocol
 
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import Runnable, RunnableLambda, RunnablePassthrough
+from langchain_core.runnables import (
+    Runnable,
+    RunnableBranch,
+    RunnableLambda,
+    RunnablePassthrough,
+)
 from langchain_core.tools import StructuredTool
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import BaseModel, ConfigDict, Field
@@ -20,6 +26,13 @@ RAG_SYSTEM_PROMPT = """你是小雪琪的知识问答适配器，不是医生。
 每个事实性结论都要在对应句末标注资料序号，例如 [1]。
 如果没有检索结果，明确回答“知识库中没有找到相关资料”，不要猜测。
 涉及诊断、处方、剂量或紧急症状时，建议用户咨询医生或及时就医。"""
+
+EMPTY_RETRIEVAL_ANSWER = "知识库中没有找到相关资料，暂不根据模型记忆作答。"
+_CITATION_MARKER_PATTERN = re.compile(r"\[(\d+)\]")
+
+
+class GroundingError(RuntimeError):
+    """The model answer cannot be tied to the retrieved citation set."""
 
 
 class Citation(BaseModel):
@@ -197,6 +210,18 @@ def build_rag_chain(
     )
     answer_chain = prompt | chat_model | StrOutputParser()
 
+    def retrieval_is_empty(state: Mapping[str, Any]) -> bool:
+        retrieval = RetrievalPayload.model_validate(state["retrieval_payload"])
+        return not retrieval.citations
+
+    answer_or_empty = RunnableBranch(
+        (
+            retrieval_is_empty,
+            RunnableLambda(lambda _: EMPTY_RETRIEVAL_ANSWER),
+        ),
+        answer_chain,
+    )
+
     def prepare(raw_request: Mapping[str, Any] | RAGRequest) -> dict[str, Any]:
         request = (
             raw_request
@@ -213,7 +238,7 @@ def build_rag_chain(
     def finalize(state: Mapping[str, Any]) -> dict[str, Any]:
         retrieval = RetrievalPayload.model_validate(state["retrieval_payload"])
         response = RAGResponse(
-            answer=str(state["answer"]),
+            answer=_validate_grounded_answer(str(state["answer"]), retrieval.citations),
             citations=retrieval.citations,
             count=retrieval.count,
             retrieval=retrieval.retrieval,
@@ -223,7 +248,7 @@ def build_rag_chain(
 
     chain = (
         RunnableLambda(prepare)
-        | RunnablePassthrough.assign(answer=answer_chain)
+        | RunnablePassthrough.assign(answer=answer_or_empty)
         | RunnableLambda(finalize)
     )
     return chain.with_types(input_type=RAGRequest, output_type=RAGResponse)
@@ -270,3 +295,22 @@ def _format_context(citations: list[Citation]) -> str:
             f"正文：{citation.text_zh}"
         )
     return "\n\n".join(sections)
+
+
+def _validate_grounded_answer(answer: str, citations: list[Citation]) -> str:
+    if not citations:
+        return EMPTY_RETRIEVAL_ANSWER
+
+    normalized = answer.strip()
+    referenced_indexes = {
+        int(match.group(1)) for match in _CITATION_MARKER_PATTERN.finditer(normalized)
+    }
+    if not referenced_indexes:
+        raise GroundingError("model answer is missing citation markers")
+
+    available_indexes = {citation.index for citation in citations}
+    unknown_indexes = referenced_indexes - available_indexes
+    if unknown_indexes:
+        rendered = ", ".join(str(index) for index in sorted(unknown_indexes))
+        raise GroundingError(f"model answer references unknown citations: {rendered}")
+    return normalized

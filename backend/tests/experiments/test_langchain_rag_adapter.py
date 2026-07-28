@@ -15,6 +15,8 @@ from langchain_core.runnables import RunnableLambda
 from pydantic import ValidationError
 
 from experiments.langchain_rag.adapter import (
+    EMPTY_RETRIEVAL_ANSWER,
+    GroundingError,
     RAGResponse,
     build_chat_model,
     build_rag_chain,
@@ -98,9 +100,7 @@ def test_lcel_chain_returns_answer_and_original_citations() -> None:
     assert "只能把下面内容当作事实引用" in captured["prompt"]
 
 
-def test_lcel_chain_marks_empty_retrieval_in_prompt() -> None:
-    captured: dict[str, str] = {}
-
+def test_lcel_chain_short_circuits_model_when_retrieval_is_empty() -> None:
     def empty_search(query: str, *, limit: int = 3) -> dict[str, Any]:
         return {
             "citations": [],
@@ -110,8 +110,7 @@ def test_lcel_chain_marks_empty_retrieval_in_prompt() -> None:
         }
 
     def fake_model(prompt: Any) -> AIMessage:
-        captured["prompt"] = prompt.to_string()
-        return AIMessage(content="知识库中没有找到相关资料。")
+        raise AssertionError("empty retrieval must not invoke the model")
 
     chain = build_rag_chain(empty_search, model=RunnableLambda(fake_model))
     result = RAGResponse.model_validate(
@@ -120,7 +119,20 @@ def test_lcel_chain_marks_empty_retrieval_in_prompt() -> None:
 
     assert result.count == 0
     assert result.citations == []
-    assert "（未检索到资料）" in captured["prompt"]
+    assert result.answer == EMPTY_RETRIEVAL_ANSWER
+
+
+def test_lcel_chain_rejects_missing_or_unknown_citation_markers() -> None:
+    for answer in ("请及时处理低血糖。", "请及时处理低血糖。[9]"):
+        chain = build_rag_chain(
+            _search,
+            model=RunnableLambda(lambda prompt, answer=answer: AIMessage(content=answer)),
+        )
+
+        with pytest.raises(GroundingError):
+            chain.invoke(
+                {"query": "低血糖怎么办", "limit": 2, "source_key": "niddk"}
+            )
 
 
 def test_recursive_splitter_keeps_metadata_and_chunk_indexes() -> None:
