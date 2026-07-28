@@ -161,6 +161,8 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ~~~
 
+本提交于 2026-07-28 实际执行后端全量测试，结果为 `87 passed`；同时对本次涉及的检索、评测脚本与测试文件执行 `ruff check`，结果为 `All checks passed`。这里记录的是本提交的真实运行结果，不是预计值；后续代码或依赖变化后应重新执行并更新。
+
 RAG 检索效果使用独立离线评测集复现：
 
 ~~~powershell
