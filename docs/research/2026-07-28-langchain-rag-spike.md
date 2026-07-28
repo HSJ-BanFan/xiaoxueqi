@@ -3,7 +3,7 @@
 > 日期：2026-07-28  
 > 实验分支：`spike/langchain-rag`  
 > 对接分支：`feat/rag-knowledge`  
-> 初始基线：两条分支均从 `407e820`（RAG 设计规格提交）开始；当前 spike 提交为 `336f832`
+> 初始基线：两条分支均从 `407e820`（RAG 设计规格提交）开始；原始 spike 提交为 `336f832`，grounding follow-up 为 `9348d96`
 > 范围：离线代码 spike；没有修改现有 Agent 主路径，也没有把 LangChain 加入默认生产依赖。
 
 ## 结论
@@ -99,7 +99,7 @@ python -m pytest tests/experiments -q
 # 9 passed
 
 python -m pytest -q
-# 72 passed
+# 78 passed
 ```
 
 7 项适配层专项测试覆盖：
@@ -112,7 +112,7 @@ python -m pytest -q
 6. `ChatOpenAI` 正确复用项目的 OpenAI-compatible base URL、鉴权、模型、温度和非流式 `/chat/completions` 请求。
 7. 模型答案缺少引用或引用未知编号时，适配层拒绝输出。
 
-另外 2 项真实 seam 集成测试覆盖 `KnowledgeRetriever.search()` → LCEL 后仍保留 BM25 + vector 的 RRF 结果，以及向量失败时 `retrieval=bm25`、`degraded=true` 的降级语义。当前后端全量 72 项测试同时通过，说明可选实验没有改写既有 Agent、API、工具和健康服务行为。
+另外 2 项真实 seam 集成测试覆盖 `KnowledgeRetriever.search()` → LCEL 后仍保留 BM25 + vector 的 RRF 结果，以及向量失败时 `retrieval=bm25`、`degraded=true` 的降级语义。当前后端全量 78 项测试同时通过，说明可选实验没有改写既有 Agent、API、工具和健康服务行为。
 
 ## 采用边界
 
