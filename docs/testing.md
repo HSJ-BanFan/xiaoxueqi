@@ -131,6 +131,7 @@ python -m pytest -q
 | K6 | legacy 表执行 seed | 幂等补列、建 chunks 表、重复 seed 跳过 |
 | K7 | 摄取纯函数与白名单 | 60 个唯一 URL；正文范围、数字保护、中文完整性和 robots crawl-delay 正确 |
 | K8 | Agent grounding 门禁 | 未检索、空检索、缺失引用、越界引用和错误工具耗尽轮次均进入确定性知识 fallback |
+| K9 | RAG 离线评测 | 50 题 dev/test 数据集的 gold ID/URL 合法；旧 SQL 与当前检索器在内存 SQLite 可复现；指标与 JSON/Markdown 报告口径固定 |
 
 全部知识测试使用内存 SQLite、fixture 语料和假 embedder，不执行摄取脚本，也不产生网络请求。
 

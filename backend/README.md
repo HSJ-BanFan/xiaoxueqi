@@ -106,6 +106,14 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ~~~
 
+离线复现 RAG 检索指标：
+
+~~~powershell
+python scripts/evaluate_rag.py --split test --k 3
+~~~
+
+脚本会在内存 SQLite 中导入正式语料，同时运行提交 `9a37edc` 的 SQL `ILIKE` 基线与当前检索器，输出 JSON、Markdown、三项宏指标和逐题失败清单；全程禁用 embedding、网络和真实 LLM。当前 50 题数据集的 held-out test 结果为 Recall@3 `0.0% → 84.0%`、Citation Hit@3（引用命中率）`92.0%`、Citation Precision@3 `41.3%`。
+
 重点覆盖：
 
 - 注册、登录和无 Token 拒绝

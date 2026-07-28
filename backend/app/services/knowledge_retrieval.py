@@ -22,12 +22,26 @@ from app.db.models import KnowledgeBase, KnowledgeChunk
 logger = logging.getLogger(__name__)
 
 _TOKEN_PATTERN = re.compile(r"[a-z0-9]+(?:[._+%-][a-z0-9]+)*|[\u3400-\u9fff]+", re.IGNORECASE)
+_NON_WORD_PATTERN = re.compile(r"[\W_]+", re.UNICODE)
+_TITLE_COVERAGE_BOOST = 8.0
+_TITLE_EXACT_PHRASE_BOOST = 4.0
 _QUERY_SYNONYMS = {
+    "低血糖": ("血糖过低",),
+    "高血糖": ("血糖过高",),
     "运动": ("身体活动", "体力活动", "健康生活"),
     "锻炼": ("身体活动", "体力活动", "健康生活"),
     "a1c": ("糖化血红蛋白",),
     "糖化": ("a1c", "糖化血红蛋白"),
     "碳水": ("碳水化合物",),
+    "确诊": ("测试", "诊断"),
+    "筛查": ("测试", "诊断"),
+    "复查": ("检查", "测试"),
+    "1 型糖尿病": ("类型 1 糖尿病",),
+    "1型糖尿病": ("类型 1 糖尿病",),
+    "2 型糖尿病": ("类型 2 糖尿病",),
+    "2型糖尿病": ("类型 2 糖尿病",),
+    "生完孩子": ("宝宝出生后", "产后"),
+    "双脚": ("足部", "足部护理"),
     "糖尿病足": ("足部问题", "足部护理"),
     "眼底": ("眼部", "糖尿病眼病"),
 }
@@ -189,6 +203,21 @@ class _BM25Index:
                     frequency * (k1 + 1.0) / denominator
                 )
 
+        query_term_set = set(query_terms)
+        normalized_query = _normalize_for_phrase_match(query)
+        for record_index in allowed:
+            title = self.records[record_index].title
+            title_terms = set(tokenize(title))
+            if title_terms:
+                title_coverage = len(query_term_set & title_terms) / len(title_terms)
+                scores[record_index] += _TITLE_COVERAGE_BOOST * title_coverage
+
+            normalized_title = _normalize_for_phrase_match(title)
+            if normalized_title and (
+                normalized_title in normalized_query or normalized_query in normalized_title
+            ):
+                scores[record_index] += _TITLE_EXACT_PHRASE_BOOST
+
         ranked = sorted(
             scores,
             key=lambda index: (-scores[index], self.records[index].chunk_id),
@@ -230,6 +259,10 @@ def expand_query(query: str) -> str:
         if trigger in normalized:
             values.extend(synonyms)
     return " ".join(dict.fromkeys(value for value in values if value))
+
+
+def _normalize_for_phrase_match(text: str) -> str:
+    return _NON_WORD_PATTERN.sub("", (text or "").lower())
 
 
 def reciprocal_rank_fusion(
@@ -314,10 +347,25 @@ class KnowledgeRetriever:
             retrieval = "bm25+vector"
 
         fused_scores = reciprocal_rank_fusion(rankings)
-        ranked_ids = sorted(
+        fused_ranking = sorted(
             fused_scores,
             key=lambda chunk_id: (-fused_scores[chunk_id], chunk_id),
-        )[:limit]
+        )
+        ranked_ids: List[str] = []
+        repeated_chunk_ids: List[str] = []
+        seen_documents: set[str] = set()
+        for chunk_id in fused_ranking:
+            document_id = corpus.by_id[chunk_id].document_id
+            if document_id in seen_documents:
+                repeated_chunk_ids.append(chunk_id)
+                continue
+            ranked_ids.append(chunk_id)
+            seen_documents.add(document_id)
+            if len(ranked_ids) == limit:
+                break
+
+        if len(ranked_ids) < limit:
+            ranked_ids.extend(repeated_chunk_ids[: limit - len(ranked_ids)])
 
         citations = [
             self._citation(corpus.by_id[chunk_id], index, fused_scores[chunk_id])

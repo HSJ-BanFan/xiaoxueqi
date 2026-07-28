@@ -161,6 +161,17 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ~~~
 
+RAG 检索效果使用独立离线评测集复现：
+
+~~~powershell
+cd backend
+python scripts/evaluate_rag.py --split test --k 3
+~~~
+
+当前评测集共 50 题（25 dev / 25 test）。dev 仅用于通用检索调优；冻结后的 test 首次运行结果为：旧版整句 SQL `ILIKE` baseline 的 Macro Recall@3 `0.0%`，当前中文 bigram BM25/RRF 为 `84.0%`，Citation Hit@3（引用命中率）为 `92.0%`，Citation Precision@3 为 `41.3%`。机器可读结果与逐题失败清单分别见 `docs/research/artifacts/rag-evaluation.json` 和 `docs/research/2026-07-28-rag-evaluation.md`。
+
+该评测禁用 embedding、网络与真实 LLM；当前语料的 embedding 字段为空，因此这些数字只证明 SQL LIKE → 中文 BM25/RRF 的变化，不代表向量召回增益。
+
 前端检查：
 
 ~~~powershell

@@ -1,0 +1,1395 @@
+{
+  "split": "test",
+  "k": 3,
+  "case_count": 25,
+  "dataset_case_count": 50,
+  "split_counts": {
+    "dev": 25,
+    "test": 25
+  },
+  "corpus_document_count": 60,
+  "corpus_chunk_count": 429,
+  "dataset_sha256": "3648b3cff0b3727d23d01fe8c82874215b1760ad7f6c55a5d4c7406724bbecae",
+  "corpus_sha256": "debd5a54fce29ada2392664baaa5a63e963ccd76e8b0cd4ac509bdbd8bcc7081",
+  "baseline_commit": "9a37edc",
+  "systems": {
+    "legacy_sql_like": {
+      "case_count": 25,
+      "recall_at_k": 0.0,
+      "hit_at_k": 0.0,
+      "citation_precision_at_k": 0.0,
+      "failed_case_ids": [
+        "test-severe-hypoglycemia-01",
+        "test-exercise-hypoglycemia-02",
+        "test-high-low-glucose-03",
+        "test-glucose-vs-a1c-04",
+        "test-type1-autoimmune-05",
+        "test-insulin-resistance-06",
+        "test-children-diabetes-07",
+        "test-mody-08",
+        "test-metabolic-syndrome-09",
+        "test-financial-help-10",
+        "test-foot-wounds-11",
+        "test-eye-exam-12",
+        "test-kidney-early-13",
+        "test-autonomic-neuropathy-14",
+        "test-focal-neuropathy-15",
+        "test-proximal-neuropathy-16",
+        "test-neuropathy-types-17",
+        "test-gum-disease-18",
+        "test-sex-bladder-19",
+        "test-preexisting-pregnancy-20",
+        "test-gestational-definition-21",
+        "test-gestational-prevention-22",
+        "test-diet-portions-23",
+        "test-insulin-requirement-24",
+        "test-long-term-damage-25"
+      ],
+      "cases": [
+        {
+          "id": "test-severe-hypoglycemia-01",
+          "query": "严重低血糖昏迷时，家人应该怎么急救？",
+          "topic": "severe_hypoglycemia",
+          "split": "test",
+          "gold_document_ids": [
+            "f7b53be2-4f32-5c98-82ae-4a9894260b18",
+            "dc385fba-1f5d-5db1-ad7e-5c1bc2bf3038"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/low-blood-glucose-hypoglycemia",
+            "https://medlineplus.gov/hypoglycemia.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-exercise-hypoglycemia-02",
+          "query": "运动前后怎样防止血糖降得太低？",
+          "topic": "exercise_hypoglycemia",
+          "split": "test",
+          "gold_document_ids": [
+            "f7b53be2-4f32-5c98-82ae-4a9894260b18",
+            "04e0a445-f91a-5d61-a7c9-8482176b269c"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/low-blood-glucose-hypoglycemia",
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/healthy-living-with-diabetes"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-high-low-glucose-03",
+          "query": "血糖过低和过高分别会有哪些症状？",
+          "topic": "glucose_extremes",
+          "split": "test",
+          "gold_document_ids": [
+            "dc385fba-1f5d-5db1-ad7e-5c1bc2bf3038",
+            "158a7cca-cc75-5bb5-8093-97cef1c3791c"
+          ],
+          "gold_source_urls": [
+            "https://medlineplus.gov/hypoglycemia.html",
+            "https://medlineplus.gov/hyperglycemia.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-glucose-vs-a1c-04",
+          "query": "日常血糖检查和 A1C 检查有什么区别？",
+          "topic": "glucose_testing",
+          "split": "test",
+          "gold_document_ids": [
+            "72979808-7469-5139-a271-c7f943f23489",
+            "7202ba70-ece2-536a-8e0f-4d851023c056"
+          ],
+          "gold_source_urls": [
+            "https://medlineplus.gov/bloodglucose.html",
+            "https://medlineplus.gov/a1c.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-type1-autoimmune-05",
+          "query": "1 型糖尿病是不是免疫系统破坏了产生胰岛素的细胞？",
+          "topic": "type1_diabetes",
+          "split": "test",
+          "gold_document_ids": [
+            "6f3e85b9-9e1d-5fe6-9d92-95e3daa0d0a7",
+            "db15824e-4381-53da-89d8-4d1080aeba73"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/type-1-diabetes",
+            "https://medlineplus.gov/diabetestype1.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-insulin-resistance-06",
+          "query": "什么是胰岛素抵抗，它和糖尿病前期有什么关系？",
+          "topic": "insulin_resistance",
+          "split": "test",
+          "gold_document_ids": [
+            "88631dc1-d7f9-5dfe-997d-07ece38fc8e6"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-children-diabetes-07",
+          "query": "儿童和青少年也会得 2 型糖尿病吗？",
+          "topic": "pediatric_diabetes",
+          "split": "test",
+          "gold_document_ids": [
+            "2a51efd5-32a5-58ec-86bc-ea9df9f0dc4a"
+          ],
+          "gold_source_urls": [
+            "https://medlineplus.gov/diabetesinchildrenandteens.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-mody-08",
+          "query": "MODY 是什么，和常见的 1 型、2 型糖尿病有什么不同？",
+          "topic": "monogenic_diabetes",
+          "split": "test",
+          "gold_document_ids": [
+            "105f86f8-2cdc-50b4-bee4-86c5aeb16d3d"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/monogenic-neonatal-mellitus-mody"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-metabolic-syndrome-09",
+          "query": "代谢综合征包括哪些危险因素？",
+          "topic": "metabolic_syndrome",
+          "split": "test",
+          "gold_document_ids": [
+            "7dcf1e0a-c575-5ceb-9cf0-443f3609b905"
+          ],
+          "gold_source_urls": [
+            "https://medlineplus.gov/metabolicsyndrome.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-financial-help-10",
+          "query": "负担不起糖尿病药物和用品费用时可以去哪里求助？",
+          "topic": "financial_help",
+          "split": "test",
+          "gold_document_ids": [
+            "af4fbc63-43a6-5fbb-8eb3-33d80b25ac36"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/financial-help-diabetes-care"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-foot-wounds-11",
+          "query": "糖尿病为什么容易造成脚部伤口和感染？",
+          "topic": "diabetic_foot",
+          "split": "test",
+          "gold_document_ids": [
+            "ff3eea95-617e-5d85-9739-a71adcdb2864",
+            "783bffc2-9311-573e-9edd-21c3b72d7d1a"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/foot-problems",
+            "https://medlineplus.gov/diabeticfoot.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-eye-exam-12",
+          "query": "糖尿病患者为什么要定期做散瞳眼底检查？",
+          "topic": "diabetic_eye_exam",
+          "split": "test",
+          "gold_document_ids": [
+            "8f9a0462-7501-5c05-8394-1f830d2a0eb4"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/diabetic-eye-disease"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-kidney-early-13",
+          "query": "糖尿病肾病早期会有明显症状吗？",
+          "topic": "diabetic_kidney_disease",
+          "split": "test",
+          "gold_document_ids": [
+            "cca73494-d5b8-5457-ae78-b740eae97e54",
+            "6f2aa0d4-529f-5cbb-9cb4-64daf6290539"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/diabetic-kidney-disease",
+            "https://medlineplus.gov/diabetickidneyproblems.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-autonomic-neuropathy-14",
+          "query": "糖尿病自主神经病变会影响哪些器官和功能？",
+          "topic": "autonomic_neuropathy",
+          "split": "test",
+          "gold_document_ids": [
+            "9a79cba0-0c69-5eb2-83b9-42f3cbfe333c"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/autonomic-neuropathy"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-focal-neuropathy-15",
+          "query": "糖尿病会不会突然造成某一根神经疼痛或无力？",
+          "topic": "focal_neuropathy",
+          "split": "test",
+          "gold_document_ids": [
+            "8351974d-6d45-5dc2-9a97-444594ee26c6"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/focal-neuropathies"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-proximal-neuropathy-16",
+          "query": "大腿、臀部疼痛和无力可能是哪种糖尿病神经病变？",
+          "topic": "proximal_neuropathy",
+          "split": "test",
+          "gold_document_ids": [
+            "e8e28e04-0c2b-5c8d-b4c6-298925c2e37e"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/proximal-neuropathy"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-neuropathy-types-17",
+          "query": "糖尿病神经病变主要分为哪些类型？",
+          "topic": "diabetic_neuropathy",
+          "split": "test",
+          "gold_document_ids": [
+            "2a49cdf7-cda6-5b1c-a3e1-f028cdebbc6b",
+            "05c5e1f4-76f3-59b1-b045-6561a3b95626"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies",
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/what-is-diabetic-neuropathy"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-gum-disease-18",
+          "query": "糖尿病和牙龈疾病、口腔感染有什么关系？",
+          "topic": "dental_health",
+          "split": "test",
+          "gold_document_ids": [
+            "0479b961-b5af-5bc7-b29e-5ab45b8319d0"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/gum-disease-dental-problems"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-sex-bladder-19",
+          "query": "糖尿病会影响性功能或膀胱排尿吗？",
+          "topic": "sexual_bladder_health",
+          "split": "test",
+          "gold_document_ids": [
+            "a7070340-48ef-51e2-b57b-5f25865ee2e4"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/sexual-bladder-problems"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-preexisting-pregnancy-20",
+          "query": "本来就有糖尿病的人还能安全怀孕吗？",
+          "topic": "diabetes_pregnancy",
+          "split": "test",
+          "gold_document_ids": [
+            "e3c417c4-b110-51ef-b23c-41cb91f71a6a",
+            "83ad1405-b4bb-5404-b220-727c63e889a4"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/diabetes-pregnancy",
+            "https://medlineplus.gov/diabetesandpregnancy.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-gestational-definition-21",
+          "query": "妊娠糖尿病是什么，会给孕妇和宝宝带来哪些风险？",
+          "topic": "gestational_diabetes",
+          "split": "test",
+          "gold_document_ids": [
+            "e2ceba95-4659-5eac-b6e0-578d2fae3ba9",
+            "83ad1405-b4bb-5404-b220-727c63e889a4"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/gestational/definition-facts",
+            "https://medlineplus.gov/diabetesandpregnancy.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-gestational-prevention-22",
+          "query": "怀孕前和孕期能做什么来降低妊娠糖尿病风险？",
+          "topic": "gestational_prevention",
+          "split": "test",
+          "gold_document_ids": [
+            "1b0a4345-7da1-5acf-92e2-c4019509f27f"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/gestational/prevention"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-diet-portions-23",
+          "query": "糖尿病饮食中怎样安排碳水化合物和食物份量？",
+          "topic": "diabetic_diet",
+          "split": "test",
+          "gold_document_ids": [
+            "5728f1c4-db12-57f6-9726-557aa304d194",
+            "90197080-425f-55ea-b34d-e7164502c986"
+          ],
+          "gold_source_urls": [
+            "https://medlineplus.gov/diabeticdiet.html",
+            "https://medlineplus.gov/carbohydrates.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-insulin-requirement-24",
+          "query": "得了糖尿病就一定需要注射胰岛素吗？",
+          "topic": "insulin_treatment",
+          "split": "test",
+          "gold_document_ids": [
+            "3a0feb7f-3233-5f58-baeb-93675067ef0c",
+            "bf73bb6f-12d7-51a5-a6bc-43eab1ece019"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/insulin-medicines-treatments",
+            "https://medlineplus.gov/diabetesmedicines.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-long-term-damage-25",
+          "query": "长期高血糖可能损伤哪些器官，怎样减少这些问题？",
+          "topic": "diabetes_complications",
+          "split": "test",
+          "gold_document_ids": [
+            "dcf311eb-e567-5bc8-89c4-5b32027ee4ab",
+            "d45a3612-67dc-55fe-b596-8e4ba71a82e1"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems",
+            "https://medlineplus.gov/diabetescomplications.html"
+          ],
+          "retrieved_citations": [],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        }
+      ]
+    },
+    "bigram_bm25_rrf": {
+      "case_count": 25,
+      "recall_at_k": 0.84,
+      "hit_at_k": 0.92,
+      "citation_precision_at_k": 0.4133333333333333,
+      "failed_case_ids": [
+        "test-high-low-glucose-03",
+        "test-type1-autoimmune-05",
+        "test-mody-08",
+        "test-gestational-definition-21",
+        "test-insulin-requirement-24",
+        "test-long-term-damage-25"
+      ],
+      "cases": [
+        {
+          "id": "test-severe-hypoglycemia-01",
+          "query": "严重低血糖昏迷时，家人应该怎么急救？",
+          "topic": "severe_hypoglycemia",
+          "split": "test",
+          "gold_document_ids": [
+            "f7b53be2-4f32-5c98-82ae-4a9894260b18",
+            "dc385fba-1f5d-5db1-ad7e-5c1bc2bf3038"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/low-blood-glucose-hypoglycemia",
+            "https://medlineplus.gov/hypoglycemia.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "dc385fba-1f5d-5db1-ad7e-5c1bc2bf3038",
+              "source_url": "https://medlineplus.gov/hypoglycemia.html",
+              "title": "低血糖",
+              "chunk_id": "6fe6b643-50ec-5e53-ba6a-e8efeb87d33c"
+            },
+            {
+              "document_id": "f7b53be2-4f32-5c98-82ae-4a9894260b18",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/low-blood-glucose-hypoglycemia",
+              "title": "低血糖（低血糖）",
+              "chunk_id": "e3e37301-b3cc-5aab-8d7d-e3faeb13412d"
+            },
+            {
+              "document_id": "fd29c506-434b-5919-bc00-1c2bf4704dfa",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/managing-diabetes",
+              "title": "管理糖尿病",
+              "chunk_id": "14a496ac-0172-5300-a797-82b5c7861e72"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.6666666666666666
+        },
+        {
+          "id": "test-exercise-hypoglycemia-02",
+          "query": "运动前后怎样防止血糖降得太低？",
+          "topic": "exercise_hypoglycemia",
+          "split": "test",
+          "gold_document_ids": [
+            "f7b53be2-4f32-5c98-82ae-4a9894260b18",
+            "04e0a445-f91a-5d61-a7c9-8482176b269c"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/low-blood-glucose-hypoglycemia",
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/healthy-living-with-diabetes"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "04e0a445-f91a-5d61-a7c9-8482176b269c",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/healthy-living-with-diabetes",
+              "title": "糖尿病患者的健康生活",
+              "chunk_id": "fc4f7c52-129c-5b6a-9126-bdfb2b3b4f98"
+            },
+            {
+              "document_id": "72979808-7469-5139-a271-c7f943f23489",
+              "source_url": "https://medlineplus.gov/bloodglucose.html",
+              "title": "血糖",
+              "chunk_id": "a796d8a2-bd19-5141-9a5a-8890e89f0cd6"
+            },
+            {
+              "document_id": "f7b53be2-4f32-5c98-82ae-4a9894260b18",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/low-blood-glucose-hypoglycemia",
+              "title": "低血糖（低血糖）",
+              "chunk_id": "eaf3817d-174e-545d-a8cc-8835c189af86"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.6666666666666666
+        },
+        {
+          "id": "test-high-low-glucose-03",
+          "query": "血糖过低和过高分别会有哪些症状？",
+          "topic": "glucose_extremes",
+          "split": "test",
+          "gold_document_ids": [
+            "dc385fba-1f5d-5db1-ad7e-5c1bc2bf3038",
+            "158a7cca-cc75-5bb5-8093-97cef1c3791c"
+          ],
+          "gold_source_urls": [
+            "https://medlineplus.gov/hypoglycemia.html",
+            "https://medlineplus.gov/hyperglycemia.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "72979808-7469-5139-a271-c7f943f23489",
+              "source_url": "https://medlineplus.gov/bloodglucose.html",
+              "title": "血糖",
+              "chunk_id": "a796d8a2-bd19-5141-9a5a-8890e89f0cd6"
+            },
+            {
+              "document_id": "dc385fba-1f5d-5db1-ad7e-5c1bc2bf3038",
+              "source_url": "https://medlineplus.gov/hypoglycemia.html",
+              "title": "低血糖",
+              "chunk_id": "b5896716-c385-5799-8bd7-51b28c15132b"
+            },
+            {
+              "document_id": "f7b53be2-4f32-5c98-82ae-4a9894260b18",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/low-blood-glucose-hypoglycemia",
+              "title": "低血糖（低血糖）",
+              "chunk_id": "98590678-9970-5a90-940c-477695430510"
+            }
+          ],
+          "recall_at_k": 0.5,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-glucose-vs-a1c-04",
+          "query": "日常血糖检查和 A1C 检查有什么区别？",
+          "topic": "glucose_testing",
+          "split": "test",
+          "gold_document_ids": [
+            "72979808-7469-5139-a271-c7f943f23489",
+            "7202ba70-ece2-536a-8e0f-4d851023c056"
+          ],
+          "gold_source_urls": [
+            "https://medlineplus.gov/bloodglucose.html",
+            "https://medlineplus.gov/a1c.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "7202ba70-ece2-536a-8e0f-4d851023c056",
+              "source_url": "https://medlineplus.gov/a1c.html",
+              "title": "糖化血红蛋白",
+              "chunk_id": "b9c9819f-7900-5c8e-aa70-1226b4f4be38"
+            },
+            {
+              "document_id": "1e386c80-c3c0-50a8-a47f-befdff07eb42",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/tests-diagnosis",
+              "title": "糖尿病测试与诊断",
+              "chunk_id": "b756308f-791a-5be9-9f76-e418a94df8f9"
+            },
+            {
+              "document_id": "72979808-7469-5139-a271-c7f943f23489",
+              "source_url": "https://medlineplus.gov/bloodglucose.html",
+              "title": "血糖",
+              "chunk_id": "b6ad6444-e491-58fe-86f0-8bd147094497"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.6666666666666666
+        },
+        {
+          "id": "test-type1-autoimmune-05",
+          "query": "1 型糖尿病是不是免疫系统破坏了产生胰岛素的细胞？",
+          "topic": "type1_diabetes",
+          "split": "test",
+          "gold_document_ids": [
+            "6f3e85b9-9e1d-5fe6-9d92-95e3daa0d0a7",
+            "db15824e-4381-53da-89d8-4d1080aeba73"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/type-1-diabetes",
+            "https://medlineplus.gov/diabetestype1.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "6f3e85b9-9e1d-5fe6-9d92-95e3daa0d0a7",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/type-1-diabetes",
+              "title": "类型 1 糖尿病",
+              "chunk_id": "bae1b05e-a07d-5301-815f-4c9776f65f23"
+            },
+            {
+              "document_id": "f39a5964-6442-566f-86bc-0e4a90bc8cab",
+              "source_url": "https://medlineplus.gov/diabetes.html",
+              "title": "糖尿病",
+              "chunk_id": "0442271c-fd40-5a13-b32c-f3fedf8da01d"
+            },
+            {
+              "document_id": "4ee5ebbd-7f89-5008-8208-958f9042f63f",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/symptoms-causes",
+              "title": "糖尿病的症状和原因",
+              "chunk_id": "57986f20-d2ac-5af4-8875-8adb95753842"
+            }
+          ],
+          "recall_at_k": 0.5,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-insulin-resistance-06",
+          "query": "什么是胰岛素抵抗，它和糖尿病前期有什么关系？",
+          "topic": "insulin_resistance",
+          "split": "test",
+          "gold_document_ids": [
+            "88631dc1-d7f9-5dfe-997d-07ece38fc8e6"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "88631dc1-d7f9-5dfe-997d-07ece38fc8e6",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+              "title": "胰岛素抵抗和糖尿病前期",
+              "chunk_id": "70dd94b4-70c4-5ea7-b4db-44ac6711eb4b"
+            },
+            {
+              "document_id": "06f14e66-a7a4-5545-a5e7-f02ea837bd46",
+              "source_url": "https://medlineplus.gov/prediabetes.html",
+              "title": "糖尿病前期",
+              "chunk_id": "06ffd7e6-9dc4-5e95-992d-53226d2a3c6d"
+            },
+            {
+              "document_id": "f1b2289c-e55c-5c5f-a0d1-588b40d7a43c",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes",
+              "title": "什么是糖尿病？",
+              "chunk_id": "f88541f8-ce3a-5bee-9454-6d3fc83c9b55"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-children-diabetes-07",
+          "query": "儿童和青少年也会得 2 型糖尿病吗？",
+          "topic": "pediatric_diabetes",
+          "split": "test",
+          "gold_document_ids": [
+            "2a51efd5-32a5-58ec-86bc-ea9df9f0dc4a"
+          ],
+          "gold_source_urls": [
+            "https://medlineplus.gov/diabetesinchildrenandteens.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "2a51efd5-32a5-58ec-86bc-ea9df9f0dc4a",
+              "source_url": "https://medlineplus.gov/diabetesinchildrenandteens.html",
+              "title": "儿童和青少年糖尿病",
+              "chunk_id": "baa724a1-d9f4-5b92-855e-85ef9607a769"
+            },
+            {
+              "document_id": "26f9e38b-7ca2-5472-9fab-3705a97cf023",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/risk-factors-type-2-diabetes",
+              "title": "2 型糖尿病的危险因素",
+              "chunk_id": "4f2319ed-a48a-5366-997c-ec0e3289d74c"
+            },
+            {
+              "document_id": "6f3e85b9-9e1d-5fe6-9d92-95e3daa0d0a7",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/type-1-diabetes",
+              "title": "类型 1 糖尿病",
+              "chunk_id": "9a27bba9-ae33-5a4c-a46d-fcaee438dc94"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-mody-08",
+          "query": "MODY 是什么，和常见的 1 型、2 型糖尿病有什么不同？",
+          "topic": "monogenic_diabetes",
+          "split": "test",
+          "gold_document_ids": [
+            "105f86f8-2cdc-50b4-bee4-86c5aeb16d3d"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/monogenic-neonatal-mellitus-mody"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "f39a5964-6442-566f-86bc-0e4a90bc8cab",
+              "source_url": "https://medlineplus.gov/diabetes.html",
+              "title": "糖尿病",
+              "chunk_id": "0442271c-fd40-5a13-b32c-f3fedf8da01d"
+            },
+            {
+              "document_id": "f1b2289c-e55c-5c5f-a0d1-588b40d7a43c",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes",
+              "title": "什么是糖尿病？",
+              "chunk_id": "ca138810-64d8-540d-9fd8-7c8561a9da67"
+            },
+            {
+              "document_id": "d79f241a-9431-5564-bdf5-ec8ba4ab20ab",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/type-2-diabetes",
+              "title": "类型 2 糖尿病",
+              "chunk_id": "4b7056cb-0e62-5322-bc5d-eab8c65e0e26"
+            }
+          ],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        },
+        {
+          "id": "test-metabolic-syndrome-09",
+          "query": "代谢综合征包括哪些危险因素？",
+          "topic": "metabolic_syndrome",
+          "split": "test",
+          "gold_document_ids": [
+            "7dcf1e0a-c575-5ceb-9cf0-443f3609b905"
+          ],
+          "gold_source_urls": [
+            "https://medlineplus.gov/metabolicsyndrome.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "7dcf1e0a-c575-5ceb-9cf0-443f3609b905",
+              "source_url": "https://medlineplus.gov/metabolicsyndrome.html",
+              "title": "代谢综合症",
+              "chunk_id": "015cbb85-bf83-523a-892d-3a5c77d20a46"
+            },
+            {
+              "document_id": "26f9e38b-7ca2-5472-9fab-3705a97cf023",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/risk-factors-type-2-diabetes",
+              "title": "2 型糖尿病的危险因素",
+              "chunk_id": "932f9659-e645-5903-9d6c-02637dbc9ced"
+            },
+            {
+              "document_id": "88631dc1-d7f9-5dfe-997d-07ece38fc8e6",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+              "title": "胰岛素抵抗和糖尿病前期",
+              "chunk_id": "d6514c85-883c-5c96-a2e0-409f02cb7baa"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-financial-help-10",
+          "query": "负担不起糖尿病药物和用品费用时可以去哪里求助？",
+          "topic": "financial_help",
+          "split": "test",
+          "gold_document_ids": [
+            "af4fbc63-43a6-5fbb-8eb3-33d80b25ac36"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/financial-help-diabetes-care"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "af4fbc63-43a6-5fbb-8eb3-33d80b25ac36",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/financial-help-diabetes-care",
+              "title": "糖尿病护理的经济帮助",
+              "chunk_id": "904ec1f7-078b-5332-a98e-7ca8ee2856d5"
+            },
+            {
+              "document_id": "bf73bb6f-12d7-51a5-a6bc-43eab1ece019",
+              "source_url": "https://medlineplus.gov/diabetesmedicines.html",
+              "title": "糖尿病药物",
+              "chunk_id": "1246b137-cd5d-54b5-98c5-5b1e08189a4b"
+            },
+            {
+              "document_id": "fd29c506-434b-5919-bc00-1c2bf4704dfa",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/managing-diabetes",
+              "title": "管理糖尿病",
+              "chunk_id": "0d995dd9-0ebd-569f-8945-a8dba96612c2"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-foot-wounds-11",
+          "query": "糖尿病为什么容易造成脚部伤口和感染？",
+          "topic": "diabetic_foot",
+          "split": "test",
+          "gold_document_ids": [
+            "ff3eea95-617e-5d85-9739-a71adcdb2864",
+            "783bffc2-9311-573e-9edd-21c3b72d7d1a"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/foot-problems",
+            "https://medlineplus.gov/diabeticfoot.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "783bffc2-9311-573e-9edd-21c3b72d7d1a",
+              "source_url": "https://medlineplus.gov/diabeticfoot.html",
+              "title": "糖尿病足",
+              "chunk_id": "be572363-f494-58ef-a8d6-dab225bc402c"
+            },
+            {
+              "document_id": "ff3eea95-617e-5d85-9739-a71adcdb2864",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/foot-problems",
+              "title": "糖尿病和足部问题",
+              "chunk_id": "aa2f23a1-9890-547c-89ad-615fa604d00e"
+            },
+            {
+              "document_id": "f39a5964-6442-566f-86bc-0e4a90bc8cab",
+              "source_url": "https://medlineplus.gov/diabetes.html",
+              "title": "糖尿病",
+              "chunk_id": "025f4b01-bd3c-5090-b415-ba0a6376f437"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.6666666666666666
+        },
+        {
+          "id": "test-eye-exam-12",
+          "query": "糖尿病患者为什么要定期做散瞳眼底检查？",
+          "topic": "diabetic_eye_exam",
+          "split": "test",
+          "gold_document_ids": [
+            "8f9a0462-7501-5c05-8394-1f830d2a0eb4"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/diabetic-eye-disease"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "8f9a0462-7501-5c05-8394-1f830d2a0eb4",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/diabetic-eye-disease",
+              "title": "糖尿病眼病",
+              "chunk_id": "b27ca91f-00b3-59e6-ab39-95fb1d540db0"
+            },
+            {
+              "document_id": "9b3a2192-673a-517b-9840-eaecfa07512a",
+              "source_url": "https://medlineplus.gov/diabeticeyeproblems.html",
+              "title": "糖尿病眼部问题",
+              "chunk_id": "01c03f57-2023-58b2-9620-6ca7bef3432f"
+            },
+            {
+              "document_id": "9e361314-f238-51d7-91dd-345a3c8b075d",
+              "source_url": "https://medlineplus.gov/diabetestype2.html",
+              "title": "糖尿病类型 2",
+              "chunk_id": "e273a624-ffce-5a8e-8638-211f02fa2461"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-kidney-early-13",
+          "query": "糖尿病肾病早期会有明显症状吗？",
+          "topic": "diabetic_kidney_disease",
+          "split": "test",
+          "gold_document_ids": [
+            "cca73494-d5b8-5457-ae78-b740eae97e54",
+            "6f2aa0d4-529f-5cbb-9cb4-64daf6290539"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/diabetic-kidney-disease",
+            "https://medlineplus.gov/diabetickidneyproblems.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "cca73494-d5b8-5457-ae78-b740eae97e54",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/diabetic-kidney-disease",
+              "title": "糖尿病肾病",
+              "chunk_id": "d61e308a-50b5-595b-9d9a-6fa5e06048a1"
+            },
+            {
+              "document_id": "6f2aa0d4-529f-5cbb-9cb4-64daf6290539",
+              "source_url": "https://medlineplus.gov/diabetickidneyproblems.html",
+              "title": "糖尿病肾脏问题",
+              "chunk_id": "f673e797-a017-5305-9561-e19649d585d6"
+            },
+            {
+              "document_id": "f39a5964-6442-566f-86bc-0e4a90bc8cab",
+              "source_url": "https://medlineplus.gov/diabetes.html",
+              "title": "糖尿病",
+              "chunk_id": "9a87af91-2409-59ae-87a4-c0a703ade10e"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.6666666666666666
+        },
+        {
+          "id": "test-autonomic-neuropathy-14",
+          "query": "糖尿病自主神经病变会影响哪些器官和功能？",
+          "topic": "autonomic_neuropathy",
+          "split": "test",
+          "gold_document_ids": [
+            "9a79cba0-0c69-5eb2-83b9-42f3cbfe333c"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/autonomic-neuropathy"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "9a79cba0-0c69-5eb2-83b9-42f3cbfe333c",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/autonomic-neuropathy",
+              "title": "自主神经病变",
+              "chunk_id": "2ac4bb44-ae23-5253-b51b-f0674dea5c7a"
+            },
+            {
+              "document_id": "05c5e1f4-76f3-59b1-b045-6561a3b95626",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/what-is-diabetic-neuropathy",
+              "title": "什么是糖尿病神经病变？",
+              "chunk_id": "ef36b66e-a0c3-5e92-a44f-841d96889158"
+            },
+            {
+              "document_id": "2a49cdf7-cda6-5b1c-a3e1-f028cdebbc6b",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies",
+              "title": "糖尿病神经病变",
+              "chunk_id": "ab3a19f6-3912-546c-9050-5991b2277a1b"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-focal-neuropathy-15",
+          "query": "糖尿病会不会突然造成某一根神经疼痛或无力？",
+          "topic": "focal_neuropathy",
+          "split": "test",
+          "gold_document_ids": [
+            "8351974d-6d45-5dc2-9a97-444594ee26c6"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/focal-neuropathies"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "05c5e1f4-76f3-59b1-b045-6561a3b95626",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/what-is-diabetic-neuropathy",
+              "title": "什么是糖尿病神经病变？",
+              "chunk_id": "a5c2728a-3a07-55ad-9986-fdf0b2dec705"
+            },
+            {
+              "document_id": "8351974d-6d45-5dc2-9a97-444594ee26c6",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/focal-neuropathies",
+              "title": "局灶性神经病变",
+              "chunk_id": "a347da2e-1ac4-501b-afea-d586f205a466"
+            },
+            {
+              "document_id": "b9c3e2c5-dab0-5eda-93a5-846db164d58c",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/heart-disease-stroke",
+              "title": "糖尿病、心脏病和中风",
+              "chunk_id": "6d1f0bb1-ed10-5527-be76-f17c15b2d86d"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-proximal-neuropathy-16",
+          "query": "大腿、臀部疼痛和无力可能是哪种糖尿病神经病变？",
+          "topic": "proximal_neuropathy",
+          "split": "test",
+          "gold_document_ids": [
+            "e8e28e04-0c2b-5c8d-b4c6-298925c2e37e"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/proximal-neuropathy"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "2a49cdf7-cda6-5b1c-a3e1-f028cdebbc6b",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies",
+              "title": "糖尿病神经病变",
+              "chunk_id": "a24526dc-594a-5b03-b299-d069e7527086"
+            },
+            {
+              "document_id": "8351974d-6d45-5dc2-9a97-444594ee26c6",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/focal-neuropathies",
+              "title": "局灶性神经病变",
+              "chunk_id": "a347da2e-1ac4-501b-afea-d586f205a466"
+            },
+            {
+              "document_id": "e8e28e04-0c2b-5c8d-b4c6-298925c2e37e",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/proximal-neuropathy",
+              "title": "近端神经病变",
+              "chunk_id": "0b056c54-b1d1-5377-86cc-3aff583a5091"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-neuropathy-types-17",
+          "query": "糖尿病神经病变主要分为哪些类型？",
+          "topic": "diabetic_neuropathy",
+          "split": "test",
+          "gold_document_ids": [
+            "2a49cdf7-cda6-5b1c-a3e1-f028cdebbc6b",
+            "05c5e1f4-76f3-59b1-b045-6561a3b95626"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies",
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/what-is-diabetic-neuropathy"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "2a49cdf7-cda6-5b1c-a3e1-f028cdebbc6b",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies",
+              "title": "糖尿病神经病变",
+              "chunk_id": "a24526dc-594a-5b03-b299-d069e7527086"
+            },
+            {
+              "document_id": "05c5e1f4-76f3-59b1-b045-6561a3b95626",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/nerve-damage-diabetic-neuropathies/what-is-diabetic-neuropathy",
+              "title": "什么是糖尿病神经病变？",
+              "chunk_id": "ef36b66e-a0c3-5e92-a44f-841d96889158"
+            },
+            {
+              "document_id": "8835e1f1-67d2-55b8-ab9e-f98a8295e27d",
+              "source_url": "https://medlineplus.gov/diabeticnerveproblems.html",
+              "title": "糖尿病神经问题",
+              "chunk_id": "2e742b39-33be-5e81-b6b0-d5482fe9502c"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.6666666666666666
+        },
+        {
+          "id": "test-gum-disease-18",
+          "query": "糖尿病和牙龈疾病、口腔感染有什么关系？",
+          "topic": "dental_health",
+          "split": "test",
+          "gold_document_ids": [
+            "0479b961-b5af-5bc7-b29e-5ab45b8319d0"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/gum-disease-dental-problems"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "0479b961-b5af-5bc7-b29e-5ab45b8319d0",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/gum-disease-dental-problems",
+              "title": "糖尿病、牙龈疾病和其他牙齿问题",
+              "chunk_id": "c0e1a525-10ab-5713-84be-d9a106f73c93"
+            },
+            {
+              "document_id": "dcf311eb-e567-5bc8-89c4-5b32027ee4ab",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems",
+              "title": "预防糖尿病问题",
+              "chunk_id": "d67c8161-1555-568e-b0a7-644393510217"
+            },
+            {
+              "document_id": "d45a3612-67dc-55fe-b596-8e4ba71a82e1",
+              "source_url": "https://medlineplus.gov/diabetescomplications.html",
+              "title": "糖尿病并发症",
+              "chunk_id": "da023bd9-0856-5607-8c3a-14101b49bcdd"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-sex-bladder-19",
+          "query": "糖尿病会影响性功能或膀胱排尿吗？",
+          "topic": "sexual_bladder_health",
+          "split": "test",
+          "gold_document_ids": [
+            "a7070340-48ef-51e2-b57b-5f25865ee2e4"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/sexual-bladder-problems"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "a7070340-48ef-51e2-b57b-5f25865ee2e4",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/sexual-bladder-problems",
+              "title": "糖尿病、性和膀胱问题",
+              "chunk_id": "a8580ef4-b12e-53e5-b2e4-065126b38338"
+            },
+            {
+              "document_id": "f39a5964-6442-566f-86bc-0e4a90bc8cab",
+              "source_url": "https://medlineplus.gov/diabetes.html",
+              "title": "糖尿病",
+              "chunk_id": "4d0d909b-4fd7-5b74-95eb-4675a623d974"
+            },
+            {
+              "document_id": "6f3e85b9-9e1d-5fe6-9d92-95e3daa0d0a7",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/type-1-diabetes",
+              "title": "类型 1 糖尿病",
+              "chunk_id": "6b063ba8-de09-508d-9ad9-c0c42d15f02b"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-preexisting-pregnancy-20",
+          "query": "本来就有糖尿病的人还能安全怀孕吗？",
+          "topic": "diabetes_pregnancy",
+          "split": "test",
+          "gold_document_ids": [
+            "e3c417c4-b110-51ef-b23c-41cb91f71a6a",
+            "83ad1405-b4bb-5404-b220-727c63e889a4"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/diabetes-pregnancy",
+            "https://medlineplus.gov/diabetesandpregnancy.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "f39a5964-6442-566f-86bc-0e4a90bc8cab",
+              "source_url": "https://medlineplus.gov/diabetes.html",
+              "title": "糖尿病",
+              "chunk_id": "9a87af91-2409-59ae-87a4-c0a703ade10e"
+            },
+            {
+              "document_id": "83ad1405-b4bb-5404-b220-727c63e889a4",
+              "source_url": "https://medlineplus.gov/diabetesandpregnancy.html",
+              "title": "糖尿病与怀孕",
+              "chunk_id": "ac6bf47c-26b0-59b8-91cd-eb4577f2b8e0"
+            },
+            {
+              "document_id": "e3c417c4-b110-51ef-b23c-41cb91f71a6a",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/diabetes-pregnancy",
+              "title": "如果您患有糖尿病，可以怀孕",
+              "chunk_id": "ae5a2e5a-e73b-56d3-89dc-de5951dc7da6"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.6666666666666666
+        },
+        {
+          "id": "test-gestational-definition-21",
+          "query": "妊娠糖尿病是什么，会给孕妇和宝宝带来哪些风险？",
+          "topic": "gestational_diabetes",
+          "split": "test",
+          "gold_document_ids": [
+            "e2ceba95-4659-5eac-b6e0-578d2fae3ba9",
+            "83ad1405-b4bb-5404-b220-727c63e889a4"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/gestational/definition-facts",
+            "https://medlineplus.gov/diabetesandpregnancy.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "e2ceba95-4659-5eac-b6e0-578d2fae3ba9",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/gestational/definition-facts",
+              "title": "妊娠糖尿病的定义和事实",
+              "chunk_id": "3f1c9f9b-ee3d-5049-9bb0-50678ad2f458"
+            },
+            {
+              "document_id": "1e386c80-c3c0-50a8-a47f-befdff07eb42",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/tests-diagnosis",
+              "title": "糖尿病测试与诊断",
+              "chunk_id": "e6b5dcec-a4a6-5147-8b32-d7565f772e83"
+            },
+            {
+              "document_id": "f39a5964-6442-566f-86bc-0e4a90bc8cab",
+              "source_url": "https://medlineplus.gov/diabetes.html",
+              "title": "糖尿病",
+              "chunk_id": "0442271c-fd40-5a13-b32c-f3fedf8da01d"
+            }
+          ],
+          "recall_at_k": 0.5,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-gestational-prevention-22",
+          "query": "怀孕前和孕期能做什么来降低妊娠糖尿病风险？",
+          "topic": "gestational_prevention",
+          "split": "test",
+          "gold_document_ids": [
+            "1b0a4345-7da1-5acf-92e2-c4019509f27f"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/gestational/prevention"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "bd5578c3-3f74-58f0-97f7-0030b2ba2860",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/gestational",
+              "title": "妊娠期糖尿病",
+              "chunk_id": "ebb4b0e7-6a61-57da-be6e-c104ef17df8b"
+            },
+            {
+              "document_id": "1b0a4345-7da1-5acf-92e2-c4019509f27f",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/gestational/prevention",
+              "title": "预防妊娠糖尿病",
+              "chunk_id": "c491b716-c195-5959-9d34-9c66fef0804d"
+            },
+            {
+              "document_id": "cb74d199-4414-55d5-b4fd-5d311ba5dcca",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/gestational/management-treatment",
+              "title": "管理和治疗妊娠糖尿病",
+              "chunk_id": "8c2d2395-dba3-5059-a44d-977dd0b11cb6"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-diet-portions-23",
+          "query": "糖尿病饮食中怎样安排碳水化合物和食物份量？",
+          "topic": "diabetic_diet",
+          "split": "test",
+          "gold_document_ids": [
+            "5728f1c4-db12-57f6-9726-557aa304d194",
+            "90197080-425f-55ea-b34d-e7164502c986"
+          ],
+          "gold_source_urls": [
+            "https://medlineplus.gov/diabeticdiet.html",
+            "https://medlineplus.gov/carbohydrates.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "5728f1c4-db12-57f6-9726-557aa304d194",
+              "source_url": "https://medlineplus.gov/diabeticdiet.html",
+              "title": "糖尿病饮食",
+              "chunk_id": "1667399d-0f34-58bd-bcf0-2aa80245d84f"
+            },
+            {
+              "document_id": "90197080-425f-55ea-b34d-e7164502c986",
+              "source_url": "https://medlineplus.gov/carbohydrates.html",
+              "title": "碳水化合物",
+              "chunk_id": "a2b46784-650a-5d3e-b324-44123428c5e1"
+            },
+            {
+              "document_id": "04e0a445-f91a-5d61-a7c9-8482176b269c",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/healthy-living-with-diabetes",
+              "title": "糖尿病患者的健康生活",
+              "chunk_id": "4c6f9e0e-d89b-53c4-8609-f466321a4b0c"
+            }
+          ],
+          "recall_at_k": 1.0,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.6666666666666666
+        },
+        {
+          "id": "test-insulin-requirement-24",
+          "query": "得了糖尿病就一定需要注射胰岛素吗？",
+          "topic": "insulin_treatment",
+          "split": "test",
+          "gold_document_ids": [
+            "3a0feb7f-3233-5f58-baeb-93675067ef0c",
+            "bf73bb6f-12d7-51a5-a6bc-43eab1ece019"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/insulin-medicines-treatments",
+            "https://medlineplus.gov/diabetesmedicines.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "3a0feb7f-3233-5f58-baeb-93675067ef0c",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/insulin-medicines-treatments",
+              "title": "胰岛素、药物和其他糖尿病治疗",
+              "chunk_id": "400afed1-b5cb-514c-b24d-878940f047c7"
+            },
+            {
+              "document_id": "f39a5964-6442-566f-86bc-0e4a90bc8cab",
+              "source_url": "https://medlineplus.gov/diabetes.html",
+              "title": "糖尿病",
+              "chunk_id": "9a87af91-2409-59ae-87a4-c0a703ade10e"
+            },
+            {
+              "document_id": "cb74d199-4414-55d5-b4fd-5d311ba5dcca",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/gestational/management-treatment",
+              "title": "管理和治疗妊娠糖尿病",
+              "chunk_id": "6832a195-2f1b-5a13-9ce0-8a514f184fb5"
+            }
+          ],
+          "recall_at_k": 0.5,
+          "hit_at_k": 1.0,
+          "citation_precision_at_k": 0.3333333333333333
+        },
+        {
+          "id": "test-long-term-damage-25",
+          "query": "长期高血糖可能损伤哪些器官，怎样减少这些问题？",
+          "topic": "diabetes_complications",
+          "split": "test",
+          "gold_document_ids": [
+            "dcf311eb-e567-5bc8-89c4-5b32027ee4ab",
+            "d45a3612-67dc-55fe-b596-8e4ba71a82e1"
+          ],
+          "gold_source_urls": [
+            "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems",
+            "https://medlineplus.gov/diabetescomplications.html"
+          ],
+          "retrieved_citations": [
+            {
+              "document_id": "158a7cca-cc75-5bb5-8093-97cef1c3791c",
+              "source_url": "https://medlineplus.gov/hyperglycemia.html",
+              "title": "高血糖",
+              "chunk_id": "a64c20af-0736-5d50-b045-1c9d379b16bc"
+            },
+            {
+              "document_id": "72979808-7469-5139-a271-c7f943f23489",
+              "source_url": "https://medlineplus.gov/bloodglucose.html",
+              "title": "血糖",
+              "chunk_id": "a796d8a2-bd19-5141-9a5a-8890e89f0cd6"
+            },
+            {
+              "document_id": "e3c417c4-b110-51ef-b23c-41cb91f71a6a",
+              "source_url": "https://www.niddk.nih.gov/health-information/diabetes/diabetes-pregnancy",
+              "title": "如果您患有糖尿病，可以怀孕",
+              "chunk_id": "d46dc30a-fa4c-5241-baa6-57afd28da290"
+            }
+          ],
+          "recall_at_k": 0.0,
+          "hit_at_k": 0.0,
+          "citation_precision_at_k": 0.0
+        }
+      ]
+    }
+  }
+}

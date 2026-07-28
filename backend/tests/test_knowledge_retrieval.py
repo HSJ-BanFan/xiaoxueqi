@@ -75,6 +75,21 @@ def test_query_expansion_adds_common_self_management_synonyms():
     )
 
 
+def test_query_expansion_normalizes_common_natural_question_phrases():
+    expanded = expand_query(
+        "生完孩子后复查时，怎样确诊高血糖，1 型糖尿病和 2 型糖尿病有何区别"
+    )
+
+    assert "宝宝出生后" in expanded
+    assert "产后" in expanded
+    assert "检查" in expanded
+    assert "测试" in expanded
+    assert "诊断" in expanded
+    assert "血糖过高" in expanded
+    assert "类型 1 糖尿病" in expanded
+    assert "类型 2 糖尿病" in expanded
+
+
 def test_bm25_scores_and_ranks_relevant_chunk_first(db):
     add_document(
         db,
@@ -97,6 +112,112 @@ def test_bm25_scores_and_ranks_relevant_chunk_first(db):
     assert result.citations[0].document_id == "hypo"
     assert result.citations[0].index == 1
     assert result.citations[0].score > 0
+
+
+def test_search_prioritizes_distinct_sources_before_repeated_chunks(db):
+    first_source = KnowledgeBase(
+        id="hypo-a",
+        title="低血糖处理",
+        content="低血糖时需要及时处理。严重时需要他人帮助。",
+        source="Test Source A",
+        tags=["test"],
+        source_key="niddk",
+        source_url="https://example.test/hypo-a",
+        title_en="Hypoglycemia A",
+        license="public domain test fixture",
+        retrieved_at=datetime(2026, 7, 28),
+        content_hash="a" * 64,
+        chunks=[
+            KnowledgeChunk(
+                id="chunk-hypo-a-1",
+                chunk_index=0,
+                text_zh="低血糖时需要及时处理。",
+                text_en="Treat low blood glucose promptly.",
+                char_count=12,
+            ),
+            KnowledgeChunk(
+                id="chunk-hypo-a-2",
+                chunk_index=1,
+                text_zh="严重低血糖时需要他人帮助。",
+                text_en="Severe hypoglycemia requires help.",
+                char_count=14,
+            ),
+        ],
+    )
+    second_source = KnowledgeBase(
+        id="hypo-b",
+        title="低血糖急救",
+        content="低血糖急救资料。",
+        source="Test Source B",
+        tags=["test"],
+        source_key="medlineplus",
+        source_url="https://example.test/hypo-b",
+        title_en="Hypoglycemia B",
+        license="public domain test fixture",
+        retrieved_at=datetime(2026, 7, 28),
+        content_hash="b" * 64,
+        chunks=[
+            KnowledgeChunk(
+                id="chunk-hypo-b-1",
+                chunk_index=0,
+                text_zh="低血糖急救时应补充快速起效的碳水化合物。",
+                text_en="Use fast-acting carbohydrate for hypoglycemia.",
+                char_count=20,
+            )
+        ],
+    )
+    general_source = KnowledgeBase(
+        id="general",
+        title="糖尿病日常管理",
+        content="出现问题时应该马上按管理计划处理。",
+        source="Test Source C",
+        tags=["test"],
+        source_key="niddk",
+        source_url="https://example.test/general",
+        title_en="General management",
+        license="public domain test fixture",
+        retrieved_at=datetime(2026, 7, 28),
+        content_hash="c" * 64,
+        chunks=[
+            KnowledgeChunk(
+                id="chunk-general-1",
+                chunk_index=0,
+                text_zh="出现问题时应该马上按管理计划处理。",
+                text_en="Follow the management plan promptly.",
+                char_count=17,
+            )
+        ],
+    )
+    db.add_all([first_source, second_source, general_source])
+    db.commit()
+
+    result = KnowledgeRetriever(db).search("低血糖时应该马上怎么处理", limit=3)
+    document_ids = [citation.document_id for citation in result.citations]
+
+    assert len(document_ids) == 3
+    assert len(set(document_ids)) == 3
+
+
+def test_title_coverage_keeps_the_named_health_topic_ahead_of_generic_wording(db):
+    add_document(
+        db,
+        document_id="hyperglycemia",
+        title="高血糖",
+        text_zh="高血糖常见表现包括口渴、疲倦、尿频和视力模糊。",
+    )
+    add_document(
+        db,
+        document_id="generic-danger",
+        title="糖尿病危险情况",
+        text_zh="高血糖会有什么表现，严重时有什么危险，应该怎样处理这些问题。",
+    )
+
+    result = KnowledgeRetriever(db).search(
+        "高血糖会有什么表现，严重时有什么危险？",
+        limit=2,
+    )
+
+    assert result.citations[0].document_id == "hyperglycemia"
 
 
 def test_rrf_fusion_rewards_items_present_in_both_rankings():
