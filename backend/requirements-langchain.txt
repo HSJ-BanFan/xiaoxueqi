@@ -1,0 +1,7 @@
+-r requirements.txt
+
+# Optional LangChain RAG spike. Keep these out of the default runtime until the
+# experiment has passed the adoption gates documented under docs/research/.
+langchain-core>=1.5,<1.6
+langchain-openai>=1.4,<1.5
+langchain-text-splitters>=1.1,<1.2
