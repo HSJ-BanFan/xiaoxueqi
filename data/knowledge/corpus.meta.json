@@ -1,0 +1,31 @@
+{
+  "status": "complete_unreviewed",
+  "sources": [
+    "medlineplus",
+    "niddk"
+  ],
+  "source_document_counts": {
+    "niddk": 38,
+    "medlineplus": 22
+  },
+  "source_chunk_counts": {
+    "niddk": 344,
+    "medlineplus": 85
+  },
+  "document_count": 60,
+  "chunk_count": 429,
+  "generated_at": "2026-07-28T13:28:17+00:00",
+  "rewrite_provider": "google_translate",
+  "rewrite_model": "google-translate-web",
+  "embedding_model": null,
+  "failed_urls": [],
+  "license_reviewed": false,
+  "quality_gates": [
+    "official_allowlist",
+    "robots_crawl_delay",
+    "licensed_text_scope",
+    "numeric_fidelity",
+    "translation_completeness",
+    "unique_source_urls"
+  ]
+}
