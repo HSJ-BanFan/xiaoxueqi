@@ -7,6 +7,8 @@
 > 方法：只使用机构官网、官网 robots/sitemap、官方 API 和 CDC 官方 Archive/Search 服务
 >
 > 说明：本文是工程侧来源审查，不构成法律意见，也不能代替维护者最终人工许可签字。
+>
+> 维护者复核：HSJ-BanFan 于 2026-07-28 完成本次 60 篇/429 chunks 产物的来源范围、排除项、署名与双语抽查。
 
 ## 结论
 
@@ -18,7 +20,7 @@ CDC 暂不进入可提交语料，原因不是“CDC 正文一定受版权保护
 - CDC Media Library/API 虽然可访问正文，但其官方 Usage Guidelines 明确写有 “Redistribution of CDC syndicated content is not allowed”，同时要求不得更改内容和措辞。因此 API 返回物不适合打包进 Git，更不适合走“LLM 中文改写”流程。[CDC Media Library Usage Guidelines](https://tools.cdc.gov/medialibrary/index.aspx#/usageguidelines/info)
 - CDC Archive 对原 13 条候选 URL 的精确查询均为 0；它有旧版相关页面，但不是当前页面的无损替代，也存在过时风险。[CDC Archive](https://archive.cdc.gov/)
 
-因此，本轮完整语料的稳妥交付边界是：提交 60 篇 NIDDK/MedlinePlus 双语语料，继续保持 `license_reviewed=false`，由维护者抽查正文范围、署名和全球再分发风险后再签字。不得把本次自动核对伪装成“人工许可复核完成”。
+因此，本轮完整语料的稳妥交付边界是：提交 60 篇 NIDDK/MedlinePlus 双语语料，并在自动门禁之外由维护者抽查正文范围、署名和全球再分发风险。该人工复核已于 2026-07-28 完成；结论仅适用于当前 content hashes，重新生成语料后必须重新签字。
 
 ## 来源决策表
 
@@ -143,7 +145,7 @@ CDC 官方 Search 服务可以返回搜索索引和高亮片段，本次用它�
 3. NIDDK 只取正文文字；MedlinePlus 只取 `#topic-summary`。任何图片、Logo、第三方卡片、药品专论、百科正文和 RSS 内容均不得进入 corpus。
 4. 每个文档保留官方标题、原始 URL、抓取时间、精确许可说明、来源署名和内容 hash；中文片段保留对应英文原文。
 5. 数字、百分比、单位、阈值和时间范围必须通过自动一致性校验；本次对 429 个 chunk 全量执行，并额外抽查中文完整性。
-6. `LICENSES.md` 应记录上述范围与例外，但 `license_reviewed` 必须继续为 `false`，直到维护者完成人工页面抽查并确认全球再分发风险。
+6. `LICENSES.md` 记录上述范围与例外；维护者完成当前产物的页面抽查和全球再分发风险确认后，将 `license_reviewed` 置为 `true`。本次复核已完成，重新生成产物时必须恢复为 `false` 并重新检查。
 
 ## 官方资料
 

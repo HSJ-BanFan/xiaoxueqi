@@ -67,7 +67,7 @@ python scripts/ingest_knowledge.py --only niddk --limit 1 --no-rewrite --dry-run
 python scripts/ingest_knowledge.py --rewrite-provider google --no-embed
 ~~~
 
-摄取脚本只访问 `scripts/sources.py` 的 60 个显式白名单 URL，按源站 robots 动态取最大请求间隔（NIDDK 当前为 10 秒），并默认只在 40–60 篇、300–500 chunks、0 失败时覆盖产物。仓库语料当前为 60 篇、429 chunks；必须继续人工复核 `../data/knowledge/LICENSES.md`，许可状态明确保持待复核。
+摄取脚本只访问 `scripts/sources.py` 的 60 个显式白名单 URL，按源站 robots 动态取最大请求间隔（NIDDK 当前为 10 秒），并默认只在 40–60 篇、300–500 chunks、0 失败时覆盖产物。仓库语料当前为 60 篇、429 chunks，维护者已于 2026-07-28 完成人工许可复核；重新运行摄取脚本会恢复待复核状态，发布新产物前必须再次检查 `../data/knowledge/LICENSES.md`。
 
 ## 创建本地管理员
 

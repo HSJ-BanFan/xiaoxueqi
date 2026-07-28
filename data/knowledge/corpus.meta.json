@@ -1,5 +1,5 @@
 {
-  "status": "complete_unreviewed",
+  "status": "complete",
   "sources": [
     "medlineplus",
     "niddk"
@@ -19,7 +19,9 @@
   "rewrite_model": "google-translate-web",
   "embedding_model": null,
   "failed_urls": [],
-  "license_reviewed": false,
+  "license_reviewed": true,
+  "license_reviewed_at": "2026-07-28T22:16:19+08:00",
+  "license_reviewer": "HSJ-BanFan",
   "quality_gates": [
     "official_allowlist",
     "robots_crawl_delay",

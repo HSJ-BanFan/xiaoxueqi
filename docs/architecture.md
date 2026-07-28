@@ -127,7 +127,7 @@ POST /api/v1/agent/chat
   向量端点异常 → BM25，degraded=true
 ```
 
-语料是版本化构建产物，运行时不访问源站。当前仓库包含 60 篇、429 chunks 的 NIDDK/MedlinePlus 完整双语语料；自动质量门禁已通过，但 `data/knowledge/LICENSES.md` 的维护者人工许可复核仍是正式发布前置条件。
+语料是版本化构建产物，运行时不访问源站。当前仓库包含 60 篇、429 chunks 的 NIDDK/MedlinePlus 完整双语语料；自动质量门禁与 2026-07-28 维护者人工许可复核均已完成。任何重新摄取的产物都会恢复待复核状态。
 
 ## 7. 前端结构
 

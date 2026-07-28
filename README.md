@@ -110,7 +110,7 @@ source .venv/bin/activate
 
 默认配置使用本地 SQLite，并在启动时自动创建表。`seed_knowledge.py` 会幂等补齐旧数据库字段并导入 `data/knowledge/corpus.jsonl`；数据库文件只存在于本地，不应提交到 Git。
 
-仓库当前附带 60 篇、429 个 chunk 的完整双语语料（NIDDK 38 篇、MedlinePlus 22 篇），可直接 seed 后离线检索。语料已通过白名单、robots 节流、许可范围、数字一致性、中文完整性和 URL 唯一性自动门禁；`data/knowledge/corpus.meta.json` 仍明确标记 `license_reviewed=false`，维护者完成人工许可复核前不得宣称许可验收已完成。
+仓库当前附带 60 篇、429 个 chunk 的完整双语语料（NIDDK 38 篇、MedlinePlus 22 篇），可直接 seed 后离线检索。语料已通过白名单、robots 节流、许可范围、数字一致性、中文完整性和 URL 唯一性自动门禁，并由维护者于 2026-07-28 完成人工许可复核；`data/knowledge/corpus.meta.json` 标记为 `status=complete`、`license_reviewed=true`。重新生成语料后必须再次复核。
 
 如需连接模型服务，请在 backend/.env 中配置：
 

@@ -1,13 +1,14 @@
 # Knowledge Corpus Licenses
 
-> 本文件由摄取脚本记录源站声明。提交语料前必须由维护者人工复核；正文语料不包含图片或第三方转载内容。
+> 本文件由摄取脚本记录源站声明；本次 60 篇/429 chunks 产物已由维护者 HSJ-BanFan 于 2026-07-28 完成人工复核。正文语料不包含图片或第三方转载内容。重新生成语料后必须再次复核。
 
 ## medlineplus
 
 - 声明页面：<https://medlineplus.gov/about/using/usingcontent/>
 - 抓取时间：2026-07-28T13:21:03+00:00
 - 纳入范围：MedlinePlus health topic summaries are public domain; excludes licensed encyclopedia and drug content, images, illustrations, photos, and RSS material
-- 人工复核：待完成
+- 人工复核：已完成（HSJ-BanFan，2026-07-28）
+- 复核结论：仅纳入 health topic page 的 public-domain summary；未纳入 A.D.A.M. 百科、ASHP 药品专论、图片、插图、照片或 RSS 内容
 
 ```text
 Linking to and Using Content from MedlinePlus
@@ -96,7 +97,8 @@ The MedlinePlus RSS feeds are for personal use only. They may contain licensed c
 - 声明页面：<https://www.niddk.nih.gov/copyright>
 - 抓取时间：2026-07-28T13:21:01+00:00
 - 纳入范围：NIDDK majority copyright-free health information; text only; excludes logos, graphics, third-party material, and content carrying a separate copyright notice
-- 人工复核：待完成
+- 人工复核：已完成（HSJ-BanFan，2026-07-28）
+- 复核结论：仅纳入普通健康信息正文文字；未纳入 Logo、图片、图形、第三方材料、联合出版材料或带单独版权声明的内容
 
 ```text
 Home

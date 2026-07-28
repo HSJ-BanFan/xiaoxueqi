@@ -1,6 +1,6 @@
 # RAG 知识检索增强设计
 
-> 状态：核心链路与完整语料已实现；人工许可复核待完成
+> 状态：核心链路、完整语料与人工许可复核均已完成
 > 日期：2026-07-28
 > 落地目标：`docs/agent-behavior-spec.md` 的 I24（知识问答）与 `docs/agent-intelligence-plan.md` P1 第 5 项「知识库 tool」
 > 相关文档：[agent-design.md](../../agent-design.md)、[agent-behavior-spec.md](../../agent-behavior-spec.md)、[architecture.md](../../architecture.md)、[testing.md](../../testing.md)
@@ -347,7 +347,7 @@ CI 配置不变，`ingest_knowledge.py` 永不进 CI。
 
 ## 13. 验收标准
 
-- [ ] `LICENSES.md` 经人工复核，每个保留来源确认为公共领域或允许再分发
+- [x] `LICENSES.md` 经人工复核，每个保留来源确认为公共领域或允许再分发
 - [x] `corpus.jsonl` 提交进仓库，文档数 60、chunk 数 429
 - [x] 全新 clone 执行 `seed_knowledge.py` 后，知识问答可用
 - [x] 未配置 LLM 与 embedding 端点时，规则模式仍能回答「低血糖怎么办」并给出来源链接
@@ -357,7 +357,7 @@ CI 配置不变，`ingest_knowledge.py` 永不进 CI。
 - [x] `npm run build` 通过
 - [x] `docs/api.md`、`docs/architecture.md`、`docs/agent-design.md`、`docs/agent-behavior-spec.md`（I24 勾选）、`README.md` 同步更新
 
-当前仓库提交 60 篇、429 chunks 的完整双语语料：NIDDK 38 篇/344 chunks，MedlinePlus 22 篇/85 chunks。`corpus.meta.json` 状态为 `complete_unreviewed`，自动质量门禁已完成，但 `license_reviewed=false` 与 `LICENSES.md` 的“人工复核：待完成”必须保持真实，不将自动核对冒充维护者许可签字。
+当前仓库提交 60 篇、429 chunks 的完整双语语料：NIDDK 38 篇/344 chunks，MedlinePlus 22 篇/85 chunks。自动质量门禁与维护者人工许可复核均已完成，`corpus.meta.json` 状态为 `complete`、`license_reviewed=true`；该结论只适用于当前产物，重新摄取后必须再次复核。
 
 ## 14. 风险
 
@@ -419,3 +419,4 @@ docs/agent-behavior-spec.md docs/agent-intelligence-plan.md README.md
 | 2026-07-28 | 初版：数据源与许可策略、双语语料管道、BM25+可选向量混合检索、search_knowledge 工具、前端来源引用 |
 | 2026-07-28 | 第一阶段实现：核心 RAG/Agent/REST/前端/测试落地；提交启动语料，保留完整语料与许可复核门禁 |
 | 2026-07-28 | 完整语料：排除 CDC syndication；提交 NIDDK/MedlinePlus 60 篇、429 chunks；加入 robots、正文范围、翻译完整性和防部分覆盖门禁 |
+| 2026-07-28 | 维护者完成人工许可与语料范围复核；当前产物标记为 `complete`、`license_reviewed=true` |
